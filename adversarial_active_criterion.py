@@ -37,7 +37,7 @@ class Adversarial_example(object):
     def predict(self,image):
         self.model.eval()
         with torch.no_grad():
-            prediction = self.model(image.to(self.device))
+            prediction = self.model(image)
             y_pred = prediction.argmax(1)
         return y_pred
         
@@ -48,6 +48,7 @@ class Adversarial_example(object):
         raise NotImplementedError()
 
     def generate_sample_adv(self, index, true_image, attack_fn, **args):
+        true_image = true_image.to(self.device)
         true_label = self.predict(true_image)
         ##### I save the labels in a txt file
         file = open('labels.txt', 'a')
