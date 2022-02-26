@@ -30,14 +30,14 @@ class Adversarial_example(object):
         img_shape = (1, img_nrows, img_ncols, n_channels)
         
         self.model = model.to(device)
-        
+        self.device = device
         self.img_shape = img_shape
         self.nb_class = nb_class
 
     def predict(self,image):
         self.model.eval()
         with torch.no_grad():
-            prediction = self.model(image.to(device))
+            prediction = self.model(image.to(self.device))
             y_pred = prediction.argmax(1)
         return y_pred
         
