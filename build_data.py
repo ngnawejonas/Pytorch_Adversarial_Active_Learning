@@ -46,6 +46,7 @@ class MyDataSet(datasets.VisionDataset):
 
     def add_data(self, X, y):
         assert len(X) == len(y)
+        X , y = X.to(self.data.device), y.to(self.targets.device)
         self.data = torch.cat([self.data, X])
         self.targets = torch.cat([self.targets, y])
 
