@@ -24,7 +24,7 @@ from cleverhans.torch.attacks.projected_gradient_descent import projected_gradie
 class Adversarial_example(object):
     
     def __init__(self, model, n_channels=3, img_nrows=32, img_ncols=32, 
-                 nb_class=10):
+                 nb_class=10, device='cpu'):
 
         ##### The order has change, now the channel is the last parameter instead of the first parameter
         img_shape = (1, img_nrows, img_ncols, n_channels)
