@@ -71,7 +71,7 @@ class Adversarial_example(object):
         file = open('distance.txt', 'a')
         file.write(str(index))
         file.write(",   ")
-        file.write(str(distance.detach().numpy()))
+        file.write(str(distance.detach().cpu().numpy()))
         file.write("\n")
         file.close()
         return distance, x_i
