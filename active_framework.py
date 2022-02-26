@@ -58,7 +58,7 @@ def active_training(labelled_data, network_name, img_size,
 def evaluate(model, test_data, percentage, id_exp, repo, filename, device):
  
     test_dataloader = DataLoader(test_data)
-    loss, acc = test(test_dataloader, model, device=device)
+    loss, acc = test(test_dataloader, model.to(device), device=device)
     
     with closing(open(os.path.join(repo, filename), 'a')) as csvfile:
         # TO DO
