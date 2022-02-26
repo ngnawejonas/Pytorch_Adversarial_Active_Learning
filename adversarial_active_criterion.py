@@ -110,7 +110,7 @@ class Adversarial_DeepFool(Adversarial_example):
             for i in range(len(data)):
                 for j in range(len(data)):
                     adv_dist = torch.norm(sortedAdv[i]-sortedAdv[j])
-                    dist.append(adv_dist.numpy())
+                    dist.append(adv_dist.cpu().numpy())
 
             median_dist = np.median(np.unique(dist))
 
