@@ -127,16 +127,16 @@ def loading(repo, filename, num_sample, network_name, data_name):
     return model, labelled_data, unlabelled_data, test_data
 
 
-def active_selection(model, unlabelled_data, nb_data, active_method, attack, repo, tmp_adv):
+def active_selection(model, unlabelled_data, nb_data, active_method, attack, repo, tmp_adv, device):
     assert active_method in ['uncertainty', 'random', 'aaq', 'saaq'], ('Unknown active criterion %s', active_method)
     if active_method=='uncertainty':
         query, unlabelled_data = uncertainty_selection(model, unlabelled_data, nb_data)
     if active_method=='random':
         query, unlabelled_data = random_selection(unlabelled_data, nb_data)
     if active_method=='aaq':
-        query, unlabelled_data = adversarial_selection(model, unlabelled_data, nb_data, attack, False, repo, tmp_adv)
+        query, unlabelled_data = adversarial_selection(model, unlabelled_data, nb_data, attack, False, repo, tmp_adv, device)
     if active_method=='saaq':
-        query, unlabelled_data = adversarial_selection(model, unlabelled_data, nb_data, attack, True, repo, tmp_adv)       
+        query, unlabelled_data = adversarial_selection(model, unlabelled_data, nb_data, attack, True, repo, tmp_adv, device)       
     return query, unlabelled_data
     
 def random_selection(unlabelled_data, nb_data):
@@ -168,12 +168,12 @@ def uncertainty_selection(model, unlabelled_data, nb_data):
     return (new_data, new_labels), \
            (unlabelled_data[0][index_unlabelled], unlabelled_data[1][index_unlabelled])
                  
-def adversarial_selection(model, unlabelled_data, nb_data, attack='fgsm', add_adv=False, repo='.', filename = None):
+def adversarial_selection(model, unlabelled_data, nb_data, attack='fgsm', add_adv=False, repo='.', filename = None, device=None):
 
     n_channels, img_nrows, img_ncols, nb_classes  = 1, 28, 28, 10
 
     active = Adversarial_DeepFool(model=model, n_channels=n_channels,
-                                  img_nrows=img_nrows, img_ncols=img_ncols, nb_class=nb_classes)
+                                  img_nrows=img_nrows, img_ncols=img_ncols, nb_class=nb_classes, device=device)
     # select a subset of size 10*nb_data
     u_size = len(unlabelled_data.indices)
     n = min(300, u_size)
@@ -226,7 +226,7 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='fg
         evaluate(model, test_data, percentage_data, id_exp, repo, filename, device)
         t = time.time()
         print("Active selection")    
-        query, unlabelled_data = active_selection(model, unlabelled_data, nb_query, active_name, attack, repo, tmp_adv) # TO DO
+        query, unlabelled_data = active_selection(model, unlabelled_data, nb_query, active_name, attack, repo, tmp_adv, device) # TO DO
         # add query to the labelled set
         labelled_data.cat(query)
         #update percentage_data
