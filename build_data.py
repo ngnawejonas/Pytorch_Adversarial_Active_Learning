@@ -15,11 +15,6 @@ from torch.utils.data import DataLoader, random_split
 from torchvision import datasets
 from torchvision.transforms import ToTensor, Normalize, Compose
 
-import scipy.misc as misc
-from contextlib import closing
-import h5py
-import pickle as pkl
-import cv2
 from typing import Tuple, Any
 
 
