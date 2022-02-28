@@ -246,7 +246,7 @@ if __name__=="__main__":
 
     parser.add_argument('--id_experiment', type=int, default=4, help='id number of experiment')
     parser.add_argument('--repo', type=str, default='.', help='repository for log')
-    parser.add_argument('--filename', type=str, default='test', help='csv filename')
+    parser.add_argument('--filename', type=str, default='acc', help='csv filename')
     parser.add_argument('--num_sample', type=int, default=100, help='size of the initial training set')
     parser.add_argument('--n_pool', type=int, default=200, help='Final train size')
     parser.add_argument('--data_name', type=str, default='mnist', help='dataset')
