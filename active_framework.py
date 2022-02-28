@@ -59,7 +59,8 @@ def evaluate(model, test_data, percentage, id_exp, repo, filename, device):
     t = time.time()
     test_dataloader = DataLoader(test_data)
     loss, acc = test(test_dataloader, model.to(device), device=device)
-    print("eval time: {:.2f}".format())
+    t = time.time() - t
+    print("eval time: {:.2f}".format(t))
     with closing(open(os.path.join(repo, filename), 'a')) as csvfile:
         # TO DO
         writer = csv.writer(csvfile, delimiter=';',
