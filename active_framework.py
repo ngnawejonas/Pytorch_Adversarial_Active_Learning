@@ -56,17 +56,16 @@ def active_training(labelled_data, network_name, img_size,
 
 #%%
 def evaluate(model, test_data, percentage, id_exp, repo, filename, device):
- 
+    t = time.time()
     test_dataloader = DataLoader(test_data)
     loss, acc = test(test_dataloader, model.to(device), device=device)
-    
+    print("eval time: {:.2f}".format())
     with closing(open(os.path.join(repo, filename), 'a')) as csvfile:
         # TO DO
         writer = csv.writer(csvfile, delimiter=';',
                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
         writer.writerow([str(id_exp), str(percentage), str(acc)])
          
-    #return query, unlabelled_pool
 
 #%%
 def get_weights(model):
@@ -208,7 +207,7 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='fg
     tmp_adv = None
     if active_name in ['aaq', 'saaq']:
         tmp_adv = 'adv_{}_{}_{}'.format(data_name, network_name, active_name)
-    filename = filename+'_{}_{}_{}'.format(data_name, network_name, active_name)
+    filename = filename+'_{}_{}_{}_{}_{}'.format(data_name, network_name, active_name, n_pool, attack)
     img_size = getSize(data_name)
     # TO DO filename
     
