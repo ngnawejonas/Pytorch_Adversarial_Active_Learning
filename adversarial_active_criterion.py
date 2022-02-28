@@ -138,7 +138,7 @@ class Adversarial_DeepFool(Adversarial_example):
                                             sanity_checks=False)
         elif option == 'bim':
             return self.generate_sample_adv(index, true_image, projected_gradient_descent,
-                                            eps=16, eps_iter=1e-2, nb_iter=10, norm=np.inf, 
+                                            eps=0.3, eps_iter=1e-2, nb_iter=10, norm=np.inf, 
                                             targeted=False, rand_init=False, rand_minmax=None,
                                             sanity_checks=False)
         elif option == 'pgd':
