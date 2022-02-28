@@ -294,6 +294,6 @@ if __name__=="__main__":
 
     t = time.time() - start
     print('Time: {:.2f} seconds'.format(t))
-    f = open("time.txt", a)
+    f = open("time.txt", 'a')
     f.write('Time: {:.2f} seconds'.format(t))
     f.close()
