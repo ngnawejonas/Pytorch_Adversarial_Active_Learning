@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader, random_split, Subset
 from contextlib import closing
 from build_model import build_model_func
 from build_data import build_data_func, getSize, MyDataSet
-from train_lib import train_model, test
+from train_lib import train_model, simple_test
 from adversarial_active_criterion import Adversarial_DeepFool
 
 
