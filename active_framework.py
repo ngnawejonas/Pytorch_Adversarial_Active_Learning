@@ -58,7 +58,7 @@ def active_training(labelled_data, network_name, img_size,
 def evaluate(model, test_data, percentage, id_exp, repo, filename, device):
     t = time.time()
     test_dataloader = DataLoader(test_data)
-    loss, acc = test(test_dataloader, model.to(device), device=device)
+    acc = simple_test(test_dataloader, model.to(device), device=device)
     t = time.time() - t
     print("eval time: {:.2f}".format(t))
     with closing(open(os.path.join(repo, filename), 'a')) as csvfile:
@@ -201,7 +201,8 @@ def adversarial_selection(model, unlabelled_data, nb_data, attack='fgsm', add_ad
 
 #%%
 def active_learning(num_sample, data_name, network_name, active_name, attack='fgsm',
-                    id_exp=0, nb_query=100, n_pool = 2000, repo='test', filename='test.csv', device=None):
+                    id_exp=0, nb_query=100, n_pool = 2000, repo='test', filename='test.csv',
+                    device=None, batch_size=128):
     
     # create a model and do a reinit function
     tmp_filename = 'tmp_{}_{}_{}.pkl'.format(data_name, network_name, active_name)
@@ -214,7 +215,6 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='fg
     
     model, labelled_data, unlabelled_data, test_data = loading(repo, tmp_filename, num_sample, network_name, data_name)
 
-    batch_size = 128
     percentage_data = num_sample #len(labelled_data)
 
     print('START')
@@ -254,6 +254,7 @@ if __name__=="__main__":
     parser.add_argument('--network_name', type=str, default='resnet18', help='network')
     parser.add_argument('--active', type=str, default='saaq', help='active techniques')
     parser.add_argument('--attack', type=str, default='fgsm', help='type of attack')
+    parser.add_argument('--batch_size', type=int, default=128, help='batch size')
 
     args = parser.parse_args()
                                                                                                              
@@ -274,6 +275,7 @@ if __name__=="__main__":
     num_sample = args.num_sample
     n_pool = args.n_pool
     attack = args.attack
+    batch_size=args.batch_size
 
     # Get cpu or gpu device for training.
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -290,7 +292,8 @@ if __name__=="__main__":
                     n_pool=n_pool,
                     repo=repo,
                     filename=filename,
-                    device=device)
+                    device=device,
+                    batch_size=batch_size)
 
     t = time.time() - start
     print('Time: {:.2f} seconds'.format(t))

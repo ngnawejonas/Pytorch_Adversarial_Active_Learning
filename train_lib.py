@@ -57,6 +57,27 @@ def train(dataloader, model, loss_fn, optimizer, device):
             loss, current = loss.item(), batch * len(X)
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
+
+def simple_test(dataloader, model, loss_fn=None, device=None, verbose=True):
+    if loss_fn is None:
+        loss_fn = nn.CrossEntropyLoss()
+    size = len(dataloader.dataset)
+    num_batches = len(dataloader)
+    model.eval()
+    correct = 0
+    with torch.no_grad():
+        for X, y in dataloader:
+            X, y = X.to(device), y.to(device)
+            pred = model(X)
+            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+    correct /= size
+    acc = 100*correct
+    if verbose:
+        print(f"Test Error: \n Accuracy: {(acc):>0.1f} \n")
+    return acc
+
+
+
 def test(dataloader, model, loss_fn=None, device=None, verbose=True):
     if loss_fn is None:
         loss_fn = nn.CrossEntropyLoss()
@@ -74,7 +95,7 @@ def test(dataloader, model, loss_fn=None, device=None, verbose=True):
     correct /= size
     acc = 100*correct
     if verbose:
-        print(f"Test Error: \n Accuracy: {(acc):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+        print(f"Validation Error: \n Accuracy: {(acc):>0.1f}%, Avg loss: {test_loss:>8f} \n")
     return test_loss, acc
 
 
