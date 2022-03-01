@@ -25,7 +25,7 @@ from adversarial_active_criterion import Adversarial_DeepFool
 
 #%%
 def active_training(labelled_data, network_name, img_size,
-                    batch_size=64, epochs=20, repeat=2):
+                    batch_size=64, epochs=20, repeat=2, device=None):
     # split into train and validation
     
     N = len(labelled_data)
@@ -43,7 +43,7 @@ def active_training(labelled_data, network_name, img_size,
      
         model = build_model_func(network_name, img_size)
 
-        loss = train_model(train_data, val_data, model, epochs, batch_size)
+        loss = train_model(train_data, val_data, model, epochs, batch_size, device)
                                    
         if loss < best_loss:
             best_loss = loss;
@@ -201,7 +201,7 @@ def adversarial_selection(model, unlabelled_data, nb_data, attack='fgsm', add_ad
 
 #%%
 def active_learning(num_sample, data_name, network_name, active_name, attack='fgsm',
-                    id_exp=0, nb_query=100, n_pool = 2000, repo='test', filename='test.csv', device='cpu'):
+                    id_exp=0, nb_query=100, n_pool = 2000, repo='test', filename='test.csv', device=None):
     
     # create a model and do a reinit function
     tmp_filename = 'tmp_{}_{}_{}.pkl'.format(data_name, network_name, active_name)
@@ -220,7 +220,7 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='fg
     print('START')
     while( percentage_data < n_pool):
         print('percentage_data = ', percentage_data)
-        model = active_training(labelled_data, network_name, img_size, batch_size=batch_size, epochs=50)
+        model = active_training(labelled_data, network_name, img_size, batch_size=batch_size, epochs=50, device=device)
     
         print("Evaluate and report test acc of model")
         evaluate(model, test_data, percentage_data, id_exp, repo, filename, device)

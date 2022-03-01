@@ -57,7 +57,7 @@ def train(dataloader, model, loss_fn, optimizer, device):
             loss, current = loss.item(), batch * len(X)
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
-def test(dataloader, model, loss_fn=None, device='cpu', verbose=True):
+def test(dataloader, model, loss_fn=None, device=None, verbose=True):
     if loss_fn is None:
         loss_fn = nn.CrossEntropyLoss()
     size = len(dataloader.dataset)
@@ -78,7 +78,7 @@ def test(dataloader, model, loss_fn=None, device='cpu', verbose=True):
     return test_loss, acc
 
 
-def train_model(train_data, validation_data, model, epochs=5, batch_size=64, device='cpu'):
+def train_model(train_data, validation_data, model, epochs=5, batch_size=64, device=None):
     """ train model"""
     model = model.to(device)
     train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
