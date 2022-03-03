@@ -49,20 +49,20 @@ class MyDataSet(datasets.VisionDataset):
         self.add_data(mydataset.data, mydataset.targets)
 
 
-def build_mnist(num_sample):
+def build_(num_sample, datafn=None):
     
-    training_data = datasets.MNIST(root="data",
-                                          train=True,
-                                          download=True, 
-                                          transform=ToTensor(),
-                                          )
+    training_data = datafn(root="data",
+                          train=True,
+                          download=True, 
+                          transform=ToTensor(),
+                          )
 
     # Download test data from open datasets.
-    test_data = datasets.MNIST(root="data",
-                                      train=False,
-                                      download=True,
-                                      transform=ToTensor(),
-                                      )
+    test_data = datafn(root="data",
+                      train=False,
+                      download=True,
+                      transform=ToTensor(),
+                      )
  
     N = training_data.data.shape[0]
     X_L, unlabelled_data = random_split(training_data, [num_sample, N - num_sample],
@@ -93,10 +93,10 @@ def build_data_func(dataset_name, num_sample):
     assert (dataset_name in ['mnist', 'svhn', 'cifar', 'fashion_mnist']), 'unknown dataset {}'.format(dataset_name)
     labelled = None; unlabelled=None; test=None;
     if dataset_name=='mnist':
-        labelled, unlabelled, test = build_mnist(num_sample)
+        labelled, unlabelled, test = build_(num_sample, datasets.MNIST)
     
     if dataset_name=='fashion_mnist':
-        labelled, unlabelled, test = build_fashion_mnist(num_sample)
+        labelled, unlabelled, test = build_(num_sample, datasets.FashionMNIST)
 
     if dataset_name=='svhn':
         # TO DO
