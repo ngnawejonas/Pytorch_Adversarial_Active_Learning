@@ -13,16 +13,18 @@ def build_model_func(network_archi, img_size=(1,28,28, 10)):
     
     network_archi = network_archi.lower()
     num_classes = img_size[3]
-    img_size = (img_size[0], img_size[1], img_size[2])
     model = None
-    assert (network_archi in ['vgg8', 'resnet18', 'alexnet']), ('unknown architecture', network_archi)
+
     if network_archi == 'vgg8':
         model = None
-    if network_archi == 'resnet18':
+    elif network_archi == 'resnet18':
         model = models.resnet18(num_classes=num_classes)
-        model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-    if network_archi == 'alexnet':
+        if img_size[0] == 1:
+            model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+    elif network_archi == 'alexnet':
         model = None
+    else:
+        raise NotImplementedError('Model {} not handled.'.format(network_archi))
 
     return model
 

@@ -30,7 +30,7 @@ class EarlyStopping:
         elif self.best_score < current_score + self.delta: # there is no improvement
             self.counter += 1
             # print("best {:.2f}, current {:.2f}".format(self.best_score, current_score))
-            print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
+            # print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
             if self.counter >= self.patience:
                 self.early_stop = True
         else:
@@ -38,7 +38,7 @@ class EarlyStopping:
             self.counter = 0
 
 
-def train(dataloader, model, loss_fn, optimizer, device):
+def train(dataloader, model, loss_fn, optimizer, device, verbose=True):
     size = len(dataloader.dataset)
     model.train()
     for batch, (X, y) in enumerate(dataloader):
@@ -53,7 +53,7 @@ def train(dataloader, model, loss_fn, optimizer, device):
         loss.backward()
         optimizer.step()
 
-        if batch % 100 == 0:
+        if batch % 100 == 0 and verbose:
             loss, current = loss.item(), batch * len(X)
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
@@ -98,21 +98,38 @@ def test(dataloader, model, loss_fn=None, device=None, verbose=True):
         print(f"Validation Error: \n Accuracy: {(acc):>0.1f}%, Avg loss: {test_loss:>8f} \n")
     return test_loss, acc
 
+def get_optimzer(model, network_name='resnet18', data_name='mnist'):
+    if network_name=='resnet18' and data_name in ['mnist', 'fashion_mnist']:
+        optimizer = torch.optim.RMSprop(model.parameters(), lr=0.005)
+        scheduler = None
+    if network_name=='resnet18' and data_name == 'cifar10':
+        optimizer = torch.optim.SGD(model.parameters(), 
+                                    lr=0.1, weight_decay=5e-4,
+                                    momentum=0.9)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=200)
+    return optimizer, scheduler
 
-def train_model(train_data, validation_data, model, epochs=5, batch_size=64, device=None):
+
+def train_model(train_data, validation_data, model, epochs=5, batch_size=64, optz=None, device=None):
     """ train model"""
     model = model.to(device)
     train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
     validation_dataloader = DataLoader(validation_data, batch_size=batch_size)
     loss_fn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.RMSprop(model.parameters(), lr=0.005)
-
-    early_topping = EarlyStopping(patience=10)
+    # if optimizer is None:
+    #     optimizer = get_optimzer(model)
+    scheduler = optz[1]
+    optimizer = optz[0]
+    early_topping = EarlyStopping(patience=epochs)
 
     for t in range(epochs):
-        print(f"Epoch {t+1}\n-------------------------------")
-        train(train_dataloader, model, loss_fn, optimizer, device)
-        validation_loss, acc = test(validation_dataloader, model, loss_fn, device)
+        verbose =  t%10 == 0
+        if verbose:
+            print(f"Epoch {t+1}\n-------------------------------")
+        train(train_dataloader, model, loss_fn, optimizer, device, verbose=verbose)
+        validation_loss, acc = test(validation_dataloader, model, loss_fn, device, verbose=verbose)
+        if scheduler is not None:
+            scheduler.step()
         early_topping(validation_loss)
         if early_topping.early_stop:
             break

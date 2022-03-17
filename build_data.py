@@ -74,7 +74,7 @@ def build_(num_sample, datafn=None):
 
     return labelled_data, unlabelled_data, test_data
     
-##### I use the Fashion_MNIST dataset
+
 def build_fashion_mnist(num_sample):
     raise NotImplementedError()
     
@@ -82,53 +82,51 @@ def build_fashion_mnist(num_sample):
 def build_svhn(num_sample):
     raise NotImplementedError()
 
-##### I use the CIFAR-10 dataset
+
 def build_cifar(num_sample):
     raise NotImplementedError()
 
 def build_data_func(dataset_name, num_sample):
     dataset_name = dataset_name.lower()
     
-    ##### I add 'fashion_mnist' to the list
-    assert (dataset_name in ['mnist', 'svhn', 'cifar', 'fashion_mnist']), 'unknown dataset {}'.format(dataset_name)
     labelled = None; unlabelled=None; test=None;
     if dataset_name=='mnist':
         labelled, unlabelled, test = build_(num_sample, datasets.MNIST)
     
-    if dataset_name=='fashion_mnist':
+    elif dataset_name=='fashion_mnist':
         labelled, unlabelled, test = build_(num_sample, datasets.FashionMNIST)
 
-    if dataset_name=='svhn':
+    elif dataset_name=='svhn':
         # TO DO
         labelled, unlabelled, test = build_svhn(num_sample)
     
-    if dataset_name=='cifar':
+    elif dataset_name=='cifar10':
         # TO DO
-        labelled, unlabelled, test = build_cifar(num_sample)  
+        labelled, unlabelled, test = build_(num_sample, datasets.CIFAR10)
+    else:
+        raise NotImplementedError()
         
     return labelled, unlabelled, test
     
 def getSize(dataset_name):
     dataset_name = dataset_name.lower()
-    assert (dataset_name in ['mnist', 'svhn', 'cifar', 'bag_shoes', 'quick_draw', 'fashion_mnist']), 'unknown dataset {}'.format(dataset_name)
     
     if dataset_name=='mnist':
         return (1,28,28, 10)
 
-    if dataset_name=='fashion_mnist':
+    elif dataset_name=='fashion_mnist':
         return (1,28,28,10)
     
-    if dataset_name=='svhn':
+    elif dataset_name=='svhn':
         return (3,32,32,10)
     
-    if dataset_name=='cifar':
+    elif dataset_name=='cifar10':
         return (3,32,32,10)
         
-    if dataset_name=='bag_shoes':
+    elif dataset_name=='bag_shoes':
         return (3,64,64,2)
     
-    if dataset_name=='quick_draw':
+    elif dataset_name=='quick_draw':
         return (1,28,28, 4)
-        
-    return None
-    
+    else:
+        raise NotImplementedError('Dataset not handled!')    
