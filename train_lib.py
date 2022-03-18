@@ -1,8 +1,14 @@
+import time
+
 import numpy as np
 
 import torch
 from torch import nn
 from torch.utils.data import DataLoader, random_split
+
+from cleverhans.torch.attacks.fast_gradient_method import fast_gradient_method        
+from cleverhans.torch.attacks.projected_gradient_descent import projected_gradient_descent
+
 
 EARLY_STOPPING = True
 
@@ -73,10 +79,30 @@ def simple_test(dataloader, model, loss_fn=None, device=None, verbose=True):
     correct /= size
     acc = 100*correct
     if verbose:
-        print(f"Test Error: \n Accuracy: {(acc):>0.1f} \n")
+        print(f"Test Accuracy: {(acc):>0.1f}% \n")
     return acc
 
-
+def robust_test(dataloader, model, loss_fn=None, attack=None, device=None, verbose=True):
+    if loss_fn is None:
+        loss_fn = nn.CrossEntropyLoss()
+    size = len(dataloader.dataset)
+    num_batches = len(dataloader)
+    correct = 0
+    for X, y in dataloader:
+        print("attack...", num_batches)
+        t = time.time()
+        X = attack_fn(model, X, attack)
+        print('{:.2f} secs'.format(time.time()-t))
+        model.eval()
+        with torch.no_grad(): 
+            X, y = X.to(device), y.to(device)
+            pred = model(X)
+            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+    correct /= size
+    acc = 100*correct
+    if verbose:
+        print(f"Robust test Accuracy: {(acc):>0.1f}% \n")
+    return acc
 
 def test(dataloader, model, loss_fn=None, device=None, verbose=True):
     if loss_fn is None:
@@ -135,3 +161,22 @@ def train_model(train_data, validation_data, model, epochs=5, batch_size=64, opt
             break
     print("End Training!")
     return validation_loss
+
+def attack_fn(model, true_image, option='fgsm'):
+
+    if option == 'fgsm':
+        return fast_gradient_method(model_fn=model, x=true_image,
+                                    eps=0.5, norm=np.inf, targeted=False,
+                                    sanity_checks=False)
+    elif option == 'bim':
+        return projected_gradient_descent(model_fn=model, x=true_image, 
+                                        eps=0.3, eps_iter=1e-2, nb_iter=10, norm=np.inf,
+                                        targeted=False, rand_init=False, rand_minmax=None, 
+                                        sanity_checks=False)
+    elif option == 'pgd':
+        return projected_gradient_descent(model_fn=model, x=true_image, 
+                                        eps=0.3, eps_iter=1e-2, nb_iter=10, norm=np.inf,
+                                        targeted=False, rand_init=True, rand_minmax=0.3, 
+                                        sanity_checks=False)
+    else:
+        raise NotImplementedError('option "{}" not implemented option'.format(option))

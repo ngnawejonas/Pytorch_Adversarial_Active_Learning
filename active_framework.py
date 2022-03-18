@@ -19,7 +19,7 @@ from torch.distributions import Categorical
 from contextlib import closing
 from build_model import build_model_func
 from build_data import build_data_func, getSize, MyDataSet
-from train_lib import train_model, simple_test, get_optimzer
+from train_lib import train_model, simple_test, get_optimzer, robust_test
 from adversarial_active_criterion import Adversarial_DeepFool
 
 
@@ -63,13 +63,14 @@ def evaluate(model, test_data, percentage, id_exp, repo, filename, device, batch
     t = time.time()
     test_dataloader = DataLoader(test_data, batch_size=batch_size)
     acc = simple_test(test_dataloader, model.to(device), device=device)
+    acc_r = robust_test(test_dataloader, model.to(device), attack=attack, device=device)
     t = time.time() - t
     print("eval time: {:.2f}".format(t))
     with closing(open(os.path.join(repo, filename), 'a')) as csvfile:
         # TO DO
         writer = csv.writer(csvfile, delimiter=';',
                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow([str(id_exp), str(percentage), str(acc)])
+        writer.writerow([str(id_exp), str(percentage), str(acc), str(acc_r)])
                              
                 
 def loading(num_sample, network_name, data_name):
