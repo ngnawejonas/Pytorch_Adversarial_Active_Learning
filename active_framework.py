@@ -81,21 +81,27 @@ def loading(num_sample, network_name, data_name):
     return model, labelled_data, unlabelled_data, test_data
 
 
-def active_selection(model, unlabelled_data, nb_data, active_method, attack, repo, tmp_adv, device):
+def active_selection(model, unlabelled_data, nb_data, active_method, attack, device):
     assert active_method in ['uncertainty', 'random', 'aaq', 'saaq'], ('Unknown active criterion %s', active_method)
     if active_method=='uncertainty':
         query, unlabelled_data = uncertainty_selection(model, unlabelled_data, nb_data)
     if active_method=='random':
-        query, unlabelled_data = random_selection(unlabelled_data, nb_data)
+        query, unlabelled_data = random_selection(model, unlabelled_data, nb_data, attack, device)
     if active_method=='aaq':
-        query, unlabelled_data = adversarial_selection(model, unlabelled_data, nb_data, attack, False, repo, tmp_adv, device)
+        query, unlabelled_data = adversarial_selection(model, unlabelled_data, nb_data, attack, False, device)
     if active_method=='saaq':
-        query, unlabelled_data = adversarial_selection(model, unlabelled_data, nb_data, attack, True, repo, tmp_adv, device)       
+        query, unlabelled_data = adversarial_selection(model, unlabelled_data, nb_data, attack, True, device)       
     return query, unlabelled_data
     
-def random_selection(unlabelled_data, nb_data):
+def random_selection(model, unlabelled_data, nb_data, attack, device):
+    # select a random subset
     subset_index = np.random.choice(unlabelled_data.indices, size=nb_data, replace=False)
     subset = Subset(unlabelled_data.dataset, subset_index)
+
+    # compute distances to adv attacks on subset
+    active = Adversarial_DeepFool(model=model, device=device)
+    _idx, _adv = active.generate(subset, attack, diversity=False)
+
 
     # remove selected indexes from unlabelled_data
     for idx in subset.indices:
@@ -138,12 +144,8 @@ def uncertainty_selection(model, unlabelled_data, nb_data):
     return new_data, unlabelled_data
 
                  
-def adversarial_selection(model, unlabelled_data, nb_data, attack='fgsm', add_adv=False, repo='.', filename = None, device=None):
+def adversarial_selection(model, unlabelled_data, nb_data, attack='fgsm', add_adv=False, device=None):
 
-    n_channels, img_nrows, img_ncols, nb_classes  = 1, 28, 28, 10
-
-    active = Adversarial_DeepFool(model=model, n_channels=n_channels,
-                                  img_nrows=img_nrows, img_ncols=img_ncols, nb_class=nb_classes, device=device)
     # select a subset of size 10*nb_data
     u_size = len(unlabelled_data.indices)
     n = min(300, u_size)
@@ -151,6 +153,8 @@ def adversarial_selection(model, unlabelled_data, nb_data, attack='fgsm', add_ad
     # print(n, subset_index)
     subset = Subset(unlabelled_data.dataset, subset_index)
 
+    # compute distances to adv attacks on subset
+    active = Adversarial_DeepFool(model=model, device=device)
     chosen_indices, attacked_images = active.generate(subset, attack, diversity=True)
 
     # get selected images
@@ -181,10 +185,6 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='fg
                     device=None, batch_size=128, epochs=50, repeat=2):
     
     # create a model and do a reinit function
-    tmp_filename = 'tmp_{}_{}_{}.pkl'.format(data_name, network_name, active_name)
-    tmp_adv = None
-    if active_name in ['aaq', 'saaq']:
-        tmp_adv = 'adv_{}_{}_{}'.format(data_name, network_name, active_name)
     filename = filename+'_{}_{}_{}_{}_{}'.format(data_name, network_name, active_name, n_pool, attack)
     img_size = getSize(data_name)
     # TO DO filename
@@ -201,8 +201,8 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='fg
         print("Evaluate and report test acc of model")
         evaluate(model, test_data, percentage_data, id_exp, repo, filename, device, batch_size)
         t = time.time()
-        print("Active selection")    
-        query, unlabelled_data = active_selection(model, unlabelled_data, nb_query, active_name, attack, repo, tmp_adv, device) # TO DO
+        print(f"Active selection: {active_name}")    
+        query, unlabelled_data = active_selection(model, unlabelled_data, nb_query, active_name, attack, device) # TO DO
         # add query to the labelled set
         labelled_data.cat(query)
         #update percentage_data
@@ -213,7 +213,7 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='fg
     print('percentage_data = ', percentage_data)
     model = active_training(labelled_data, network_name, img_size, batch_size=batch_size, epochs=epochs)
     print("Evaluate and report test acc of model")
-    evaluate(model, test_data, percentage_data, id_exp, repo, filename, device, batch_size=batch_size)
+    evaluate(model, test_data, percentage_data, id_exp, repo, filename, device, batch_size)
     print("END")
         
 #%%
@@ -249,7 +249,7 @@ if __name__=="__main__":
         
     data_name = args.data_name
     network_name = args.network_name
-    active_option = args.active
+    active_name = args.active
     num_sample = args.num_sample
     n_pool = args.n_pool
     attack = args.attack
@@ -266,7 +266,7 @@ if __name__=="__main__":
     active_learning(num_sample=num_sample,
                     data_name=data_name,
                     network_name=network_name,
-                    active_name=active_option,
+                    active_name=active_name,
                     attack=attack,
                     id_exp=id_exp,
                     n_pool=n_pool,

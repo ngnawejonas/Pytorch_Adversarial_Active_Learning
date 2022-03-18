@@ -23,16 +23,10 @@ from cleverhans.torch.attacks.projected_gradient_descent import projected_gradie
 
 class Adversarial_example(object):
     
-    def __init__(self, model, n_channels=3, img_nrows=32, img_ncols=32, 
-                 nb_class=10, device=None):
-
-        ##### The order has change, now the channel is the last parameter instead of the first parameter
-        img_shape = (1, img_nrows, img_ncols, n_channels)
+    def __init__(self, model, device=None):
         
         self.model = model.to(device)
         self.device = device
-        self.img_shape = img_shape
-        self.nb_class = nb_class
 
     def predict(self,image):
         self.model.eval()
@@ -81,6 +75,8 @@ class Adversarial_DeepFool(Adversarial_example):
     
     def __init__(self,  **kwargs):
         super(Adversarial_DeepFool, self).__init__(**kwargs)
+
+
         
     def generate(self, data, option='fgsm', diversity=None):
 
@@ -96,6 +92,8 @@ class Adversarial_DeepFool(Adversarial_example):
         adv_attacks = []
         dataloader = DataLoader(data)
         for i, (image, _) in enumerate(dataloader):
+            # if i%10==0:
+            #     print(i)
             r_i, adv_image = self.generate_sample(image, option=option, index=i)
             perturbations.append(r_i.detach())
             adv_attacks.append(adv_image.detach()[0])
