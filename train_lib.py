@@ -90,10 +90,10 @@ def robust_test(dataloader, model, loss_fn=None, attack=None, device=None, verbo
     correct = 0
     for X, y in dataloader:
         X, y = X.to(device), y.to(device)
-        print("attack...", num_batches)
-        t = time.time()
+        # print("attack...", num_batches)
+        # t = time.time()
         X = attack_fn(model, X, attack)
-        print('{:.2f} secs'.format(time.time()-t))
+        # print('{:.2f} secs'.format(time.time()-t))
         model.eval()
         with torch.no_grad(): 
             pred = model(X)
