@@ -21,6 +21,12 @@ from cleverhans.torch.attacks.fast_gradient_method import fast_gradient_method
 from cleverhans.torch.attacks.projected_gradient_descent import projected_gradient_descent
 
 
+SHOW_LOG = False
+
+def log(msg, **args):
+    if SHOW_LOG:
+        print(msg, **args)
+
 class Adversarial_example(object):
     
     def __init__(self, model, device=None):
@@ -93,7 +99,7 @@ class Adversarial_DeepFool(Adversarial_example):
         dataloader = DataLoader(data)
         for i, (image, _) in enumerate(dataloader):
             # if i%10==0:
-            #     print(i)
+            #     log(i)
             r_i, adv_image = self.generate_sample(image, option=option, index=i)
             perturbations.append(r_i.detach())
             adv_attacks.append(adv_image.detach()[0])

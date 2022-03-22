@@ -18,6 +18,12 @@ from torchvision.transforms import ToTensor, Normalize, Compose
 from typing import Tuple, Any
 
 
+SHOW_LOG = False
+
+def log(msg, **args):
+    if SHOW_LOG:
+        print(msg, **args)
+
 class MyDataSet(datasets.VisionDataset):
     def __init__(self, data, targets, root='data') -> None:
         super(MyDataSet, self).__init__(root)

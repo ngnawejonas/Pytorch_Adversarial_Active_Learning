@@ -23,9 +23,16 @@ from train_lib import train_model, simple_test, get_optimzer, robust_test
 from adversarial_active_criterion import Adversarial_DeepFool
 
 
+SHOW_LOG = True
+
+def log(msg, *args):
+    if SHOW_LOG:
+        print(msg, *args)
+
+#%%
 #%%
 def active_training(labelled_data, network_name, img_size,
-                    batch_size=64, epochs=20, repeat=2, device=None):
+                    batch_size=64, epochs=20, repeat=2, device=None, attack=None):
     # split into train and validation
     
     N = len(labelled_data)
@@ -36,7 +43,7 @@ def active_training(labelled_data, network_name, img_size,
     best_model = None
     best_loss = np.inf
     for i in range(repeat):
-        print(f'training No {i+1}')
+        log(f'training No {i+1}')
         # shuffle data and split train and val
         train_data, val_data = random_split(labelled_data, [n_train, N - n_train],
                             generator=torch.Generator().manual_seed(42))
@@ -44,10 +51,11 @@ def active_training(labelled_data, network_name, img_size,
         model = build_model_func(network_name, img_size)
         model = model.to(device)
         optz = get_optimzer(model, network_name, data_name)
+
         loss = train_model(train_data=train_data,
                            validation_data=val_data,
                            model=model, epochs=epochs, batch_size=batch_size,
-                           optz=optz, device=device)
+                           optz=optz, device=device, attack=attack)
                                    
         if loss < best_loss:
             best_loss = loss;
@@ -65,7 +73,7 @@ def evaluate(model, test_data, percentage, id_exp, repo, filename, device, batch
     acc = simple_test(test_dataloader, model.to(device), device=device)
     acc_r = robust_test(test_dataloader, model.to(device), attack=attack, device=device)
     t = time.time() - t
-    print("eval time: {:.2f}".format(t))
+    log("eval time: {:.2f}".format(t))
     with closing(open(os.path.join(repo, filename), 'a')) as csvfile:
         # TO DO
         writer = csv.writer(csvfile, delimiter=';',
@@ -83,15 +91,17 @@ def loading(num_sample, network_name, data_name):
 
 
 def active_selection(model, unlabelled_data, nb_data, active_method, attack, device):
-    assert active_method in ['uncertainty', 'random', 'aaq', 'saaq'], ('Unknown active criterion %s', active_method)
     if active_method=='uncertainty':
         query, unlabelled_data = uncertainty_selection(model, unlabelled_data, nb_data)
-    if active_method=='random':
+    elif active_method in ['random', 'adv_train']:
         query, unlabelled_data = random_selection(model, unlabelled_data, nb_data, attack, device)
-    if active_method=='aaq':
+    elif active_method=='aaq':
         query, unlabelled_data = adversarial_selection(model, unlabelled_data, nb_data, attack, False, device)
-    if active_method=='saaq':
-        query, unlabelled_data = adversarial_selection(model, unlabelled_data, nb_data, attack, True, device)       
+    elif active_method=='saaq':
+        query, unlabelled_data = adversarial_selection(model, unlabelled_data, nb_data, attack, True, device)
+    else:
+        return NotImplementedError(f'Unknown active criterion {active_method}')
+
     return query, unlabelled_data
     
 def random_selection(model, unlabelled_data, nb_data, attack, device):
@@ -118,7 +128,7 @@ def uncertainty_selection(model, unlabelled_data, nb_data):
     u_size = len(unlabelled_data.indices)
     n = min(300, u_size)
     subset_index = np.random.choice(unlabelled_data.indices, size=n, replace=False)
-    # print(n, subset_index)
+    # log(n, subset_index)
     subset = Subset(unlabelled_data.dataset, subset_index)
 
     entropies = []
@@ -151,7 +161,7 @@ def adversarial_selection(model, unlabelled_data, nb_data, attack='fgsm', add_ad
     u_size = len(unlabelled_data.indices)
     n = min(300, u_size)
     subset_index = np.random.choice(unlabelled_data.indices, size=n, replace=False)
-    # print(n, subset_index)
+    # log(n, subset_index)
     subset = Subset(unlabelled_data.dataset, subset_index)
 
     # compute distances to adv attacks on subset
@@ -170,7 +180,7 @@ def adversarial_selection(model, unlabelled_data, nb_data, attack='fgsm', add_ad
         new_data = MyDataSet(data=X, targets=y)
 
     if add_adv:
-        # print(type(unlabelled_data.dataset.targets), type(chosen_indices))
+        # log(type(unlabelled_data.dataset.targets), type(chosen_indices))
         if type(unlabelled_data.dataset.targets) == list:
             labels = torch.tensor(unlabelled_data.dataset.targets)[subset.indices]
         else:
@@ -181,41 +191,48 @@ def adversarial_selection(model, unlabelled_data, nb_data, attack='fgsm', add_ad
                
 
 #%%
-def active_learning(num_sample, data_name, network_name, active_name, attack='fgsm',
+def active_learning(num_sample, data_name, network_name, active_name, attack='pgd',
                     id_exp=0, nb_query=100, n_pool = 2000, repo='test', filename='test.csv',
                     device=None, batch_size=128, epochs=50, repeat=2):
     
     # create a model and do a reinit function
     filename = filename+'_{}_{}_{}_{}_{}'.format(data_name, network_name, active_name, n_pool, attack)
     img_size = getSize(data_name)
-    # TO DO filename
-    
+    #
+    active_train_attack = None 
+    if active_name == 'adv_train':
+        active_train_attack = attack
+    #  
     model, labelled_data, unlabelled_data, test_data = loading(num_sample, network_name, data_name)
 
     percentage_data = num_sample #len(labelled_data)
-
-    print('START')
+    log('START')
     while( percentage_data < n_pool):
-        print('percentage_data = ', percentage_data)
-        model = active_training(labelled_data, network_name, img_size, batch_size=batch_size, epochs=epochs, repeat=repeat, device=device)
+        log('percentage_data = ', percentage_data)
+
+        model = active_training(labelled_data, network_name, img_size,
+                             batch_size=batch_size, epochs=epochs, 
+                             repeat=repeat, device=device, attack=active_train_attack)
     
-        print("Evaluate and report test acc of model")
+        log("Evaluate and report test acc of model")
         evaluate(model, test_data, percentage_data, id_exp, repo, filename, device, batch_size)
         t = time.time()
-        print(f"Active selection: {active_name}")    
+        log(f"Active selection: {active_name}")    
         query, unlabelled_data = active_selection(model, unlabelled_data, nb_query, active_name, attack, device) # TO DO
         # add query to the labelled set
         labelled_data.cat(query)
         #update percentage_data
         percentage_data = len(labelled_data)
         t = time.time() - t 
-        print("{}: active selection time {:.2f} seconds.".format(percentage_data, t))
+        log("{}: active selection time {:.2f} seconds.".format(percentage_data, t))
 
-    print('percentage_data = ', percentage_data)
-    model = active_training(labelled_data, network_name, img_size, batch_size=batch_size, epochs=epochs)
-    print("Evaluate and report test acc of model")
+    log('percentage_data = ', percentage_data)
+    model = active_training(labelled_data, network_name, img_size,
+                             batch_size=batch_size, epochs=epochs, 
+                             repeat=repeat, device=device, attack=active_train_attack)
+    log("Evaluate and report test acc of model")
     evaluate(model, test_data, percentage_data, id_exp, repo, filename, device, batch_size)
-    print("END")
+    log("END")
         
 #%%
 if __name__=="__main__":
@@ -260,7 +277,7 @@ if __name__=="__main__":
 
     # Get cpu or gpu device for training.
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Using {device} device")
+    log(f"Using {device} device")
 
     start = time.time()
     
@@ -279,7 +296,7 @@ if __name__=="__main__":
                     repeat=repeat)
 
     t = time.time() - start
-    print('Time: {:.2f} seconds'.format(t))
+    log('Time: {:.2f} seconds'.format(t))
     f = open("time.txt", 'a')
     f.write('Time: {:.2f} seconds'.format(t))
     f.close()

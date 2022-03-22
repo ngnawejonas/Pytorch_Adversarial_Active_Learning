@@ -11,6 +11,11 @@ from cleverhans.torch.attacks.projected_gradient_descent import projected_gradie
 
 
 EARLY_STOPPING = True
+SHOW_LOG = False
+
+def log(msg, **args):
+    if SHOW_LOG:
+        print(msg, **args)
 
 # Edit from https://github.com/Bjarten/early-stopping-pytorch/blob/master/pytorchtools.py
 class EarlyStopping:
@@ -35,8 +40,8 @@ class EarlyStopping:
 
         elif self.best_score < current_score + self.delta: # there is no improvement
             self.counter += 1
-            # print("best {:.2f}, current {:.2f}".format(self.best_score, current_score))
-            # print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
+            # log("best {:.2f}, current {:.2f}".format(self.best_score, current_score))
+            # log(f'EarlyStopping counter: {self.counter} out of {self.patience}')
             if self.counter >= self.patience:
                 self.early_stop = True
         else:
@@ -61,7 +66,27 @@ def train(dataloader, model, loss_fn, optimizer, device, verbose=True):
 
         if batch % 100 == 0 and verbose:
             loss, current = loss.item(), batch * len(X)
-            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+            log(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+
+def adv_train(dataloader, model, loss_fn, optimizer, device, attack, verbose=True):
+    log('Adversarial training')
+    size = len(dataloader.dataset)
+    model.train()
+    for batch, (X, y) in enumerate(dataloader):
+        X, y = X.to(device), y.to(device)
+        X = attack_fn(model, X, attack, test=False)
+        # Compute prediction error
+        pred = model(X)
+        loss = loss_fn(pred, y)
+
+        # Backpropagation
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        if batch % 100 == 0 and verbose:
+            loss, current = loss.item(), batch * len(X)
+            log(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
 
 def simple_test(dataloader, model, loss_fn=None, device=None, verbose=True):
@@ -74,12 +99,13 @@ def simple_test(dataloader, model, loss_fn=None, device=None, verbose=True):
     with torch.no_grad():
         for X, y in dataloader:
             X, y = X.to(device), y.to(device)
+
             pred = model(X)
             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
     correct /= size
     acc = 100*correct
     if verbose:
-        print(f"Test Accuracy: {(acc):>0.1f}% \n")
+        log(f"Test Accuracy: {(acc):>0.1f}% \n")
     return acc
 
 def robust_test(dataloader, model, loss_fn=None, attack=None, device=None, verbose=True):
@@ -90,10 +116,10 @@ def robust_test(dataloader, model, loss_fn=None, attack=None, device=None, verbo
     correct = 0
     for X, y in dataloader:
         X, y = X.to(device), y.to(device)
-        # print("attack...", num_batches)
+        # log("attack...", num_batches)
         # t = time.time()
         X = attack_fn(model, X, attack)
-        # print('{:.2f} secs'.format(time.time()-t))
+        # log('{:.2f} secs'.format(time.time()-t))
         model.eval()
         with torch.no_grad(): 
             pred = model(X)
@@ -101,7 +127,7 @@ def robust_test(dataloader, model, loss_fn=None, attack=None, device=None, verbo
     correct /= size
     acc = 100*correct
     if verbose:
-        print(f"Robust test Accuracy: {(acc):>0.1f}% \n")
+        log(f"Robust test Accuracy: {(acc):>0.1f}% \n")
     return acc
 
 def test(dataloader, model, loss_fn=None, device=None, verbose=True):
@@ -121,7 +147,7 @@ def test(dataloader, model, loss_fn=None, device=None, verbose=True):
     correct /= size
     acc = 100*correct
     if verbose:
-        print(f"Validation Error: \n Accuracy: {(acc):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+        log(f"Validation Error: \n Accuracy: {(acc):>0.1f}%, Avg loss: {test_loss:>8f} \n")
     return test_loss, acc
 
 def get_optimzer(model, network_name='resnet18', data_name='mnist'):
@@ -136,7 +162,8 @@ def get_optimzer(model, network_name='resnet18', data_name='mnist'):
     return optimizer, scheduler
 
 
-def train_model(train_data, validation_data, model, epochs=5, batch_size=64, optz=None, device=None):
+def train_model(train_data, validation_data, model, epochs=5, 
+                batch_size=64, optz=None, device=None, attack=None):
     """ train model"""
     model = model.to(device)
     train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
@@ -151,31 +178,36 @@ def train_model(train_data, validation_data, model, epochs=5, batch_size=64, opt
     for t in range(epochs):
         verbose =  t%10 == 0
         if verbose:
-            print(f"Epoch {t+1}\n-------------------------------")
-        train(train_dataloader, model, loss_fn, optimizer, device, verbose=verbose)
+            log(f"Epoch {t+1}\n-------------------------------")
+
+        if attack:
+            adv_train(train_dataloader, model, loss_fn, optimizer, device, attack=attack, verbose=verbose)
+        else:
+            train(train_dataloader, model, loss_fn, optimizer, device, verbose=verbose)
+
         validation_loss, acc = test(validation_dataloader, model, loss_fn, device, verbose=verbose)
         if scheduler is not None:
             scheduler.step()
         early_topping(validation_loss)
         if early_topping.early_stop:
             break
-    print("End Training!")
+    log("End Training!")
     return validation_loss
 
-def attack_fn(model, true_image, option='fgsm'):
-
+def attack_fn(model, true_image, option='fgsm', test=True):
+    eps = 0.5 if test else 0.3
     if option == 'fgsm':
         return fast_gradient_method(model_fn=model, x=true_image,
                                     eps=0.5, norm=np.inf, targeted=False,
                                     sanity_checks=False)
     elif option == 'bim':
         return projected_gradient_descent(model_fn=model, x=true_image, 
-                                        eps=0.3, eps_iter=1e-2, nb_iter=10, norm=np.inf,
+                                        eps=eps, eps_iter=1e-2, nb_iter=10, norm=np.inf,
                                         targeted=False, rand_init=False, rand_minmax=None, 
                                         sanity_checks=False)
     elif option == 'pgd':
         return projected_gradient_descent(model_fn=model, x=true_image, 
-                                        eps=0.3, eps_iter=1e-2, nb_iter=10, norm=np.inf,
+                                        eps=eps, eps_iter=1e-2, nb_iter=10, norm=np.inf,
                                         targeted=False, rand_init=True, rand_minmax=0.3, 
                                         sanity_checks=False)
     else:

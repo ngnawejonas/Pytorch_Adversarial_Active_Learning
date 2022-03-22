@@ -8,6 +8,13 @@ Created on Thu Nov  9 17:17:56 2017
 from torch import nn
 import torchvision.models as models
 
+
+SHOW_LOG = False
+
+def log(msg, **args):
+    if SHOW_LOG:
+        print(msg, **args)
+
      
 def build_model_func(network_archi, img_size=(1,28,28, 10)):
     
