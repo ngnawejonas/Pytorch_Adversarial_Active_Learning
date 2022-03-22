@@ -55,7 +55,7 @@ class MyDataSet(datasets.VisionDataset):
         self.add_data(mydataset.data, mydataset.targets)
 
 
-def build_(num_sample, datafn=None):
+def build_(num_sample, datafn=None, seed=False):
     
     training_data = datafn(root="data",
                           train=True,
@@ -71,8 +71,11 @@ def build_(num_sample, datafn=None):
                       )
  
     N = training_data.data.shape[0]
-    X_L, unlabelled_data = random_split(training_data, [num_sample, N - num_sample],
-                            generator=torch.Generator().manual_seed(42))
+    if seed:
+        X_L, unlabelled_data = random_split(training_data, [num_sample, N - num_sample],
+                                generator=torch.Generator().manual_seed(42))
+    else:
+        X_L, unlabelled_data = random_split(training_data, [num_sample, N - num_sample])
 
     dtl = DataLoader(X_L, batch_size=len(X_L))
     for X,y in dtl:
@@ -92,23 +95,23 @@ def build_svhn(num_sample):
 def build_cifar(num_sample):
     raise NotImplementedError()
 
-def build_data_func(dataset_name, num_sample):
+def build_data_func(dataset_name, num_sample, seed):
     dataset_name = dataset_name.lower()
     
     labelled = None; unlabelled=None; test=None;
     if dataset_name=='mnist':
-        labelled, unlabelled, test = build_(num_sample, datasets.MNIST)
+        labelled, unlabelled, test = build_(num_sample, datasets.MNIST, seed=seed)
     
     elif dataset_name=='fashion_mnist':
-        labelled, unlabelled, test = build_(num_sample, datasets.FashionMNIST)
+        labelled, unlabelled, test = build_(num_sample, datasets.FashionMNIST, seed=seed)
 
     elif dataset_name=='svhn':
         # TO DO
-        labelled, unlabelled, test = build_svhn(num_sample)
+        labelled, unlabelled, test = build_svhn(num_sample, seed=seed)
     
     elif dataset_name=='cifar10':
         # TO DO
-        labelled, unlabelled, test = build_(num_sample, datasets.CIFAR10)
+        labelled, unlabelled, test = build_(num_sample, datasets.CIFAR10, seed=seed)
     else:
         raise NotImplementedError()
         

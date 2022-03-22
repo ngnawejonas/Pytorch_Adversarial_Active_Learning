@@ -32,7 +32,7 @@ def log(msg, *args):
 #%%
 #%%
 def active_training(labelled_data, network_name, img_size,
-                    batch_size=64, epochs=20, repeat=2, device=None, attack=None):
+                    batch_size=64, epochs=100, repeat=2, device=None, attack=None):
     # split into train and validation
     
     N = len(labelled_data)
@@ -45,8 +45,7 @@ def active_training(labelled_data, network_name, img_size,
     for i in range(repeat):
         log(f'training No {i+1}')
         # shuffle data and split train and val
-        train_data, val_data = random_split(labelled_data, [n_train, N - n_train],
-                            generator=torch.Generator().manual_seed(42))
+        train_data, val_data = random_split(labelled_data, [n_train, N - n_train])
      
         model = build_model_func(network_name, img_size)
         model = model.to(device)
@@ -81,11 +80,11 @@ def evaluate(model, test_data, percentage, id_exp, repo, filename, device, batch
         writer.writerow([str(id_exp), str(percentage), str(acc), str(acc_r)])
                              
                 
-def loading(num_sample, network_name, data_name):
+def loading(num_sample, network_name, data_name, seed=False):
     img_size = getSize(data_name) # TO DO
     model=build_model_func(network_name, img_size)
 
-    labelled_data, unlabelled_data, test_data = build_data_func(data_name, num_sample=num_sample)
+    labelled_data, unlabelled_data, test_data = build_data_func(data_name, num_sample=num_sample, seed=seed)
     
     return model, labelled_data, unlabelled_data, test_data
 
@@ -193,7 +192,7 @@ def adversarial_selection(model, unlabelled_data, nb_data, attack='fgsm', add_ad
 #%%
 def active_learning(num_sample, data_name, network_name, active_name, attack='pgd',
                     id_exp=0, nb_query=100, n_pool = 2000, repo='test', filename='test.csv',
-                    device=None, batch_size=128, epochs=50, repeat=2):
+                    device=None, batch_size=128, epochs=100, repeat=2, seed=False):
     
     # create a model and do a reinit function
     filename = filename+'_{}_{}_{}_{}_{}'.format(data_name, network_name, active_name, n_pool, attack)
@@ -202,8 +201,8 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='pg
     active_train_attack = None 
     if active_name == 'adv_train':
         active_train_attack = attack
-    #  
-    model, labelled_data, unlabelled_data, test_data = loading(num_sample, network_name, data_name)
+
+    model, labelled_data, unlabelled_data, test_data = loading(num_sample, network_name, data_name, seed=seed)
 
     percentage_data = num_sample #len(labelled_data)
     log('START')
@@ -249,8 +248,9 @@ if __name__=="__main__":
     parser.add_argument('--active', type=str, default='saaq', help='active techniques')
     parser.add_argument('--attack', type=str, default='fgsm', help='type of attack')
     parser.add_argument('--batch_size', type=int, default=128, help='batch size')
-    parser.add_argument('--epochs', type=int, default=50, help='train epochs')
+    parser.add_argument('--epochs', type=int, default=100, help='train epochs')
     parser.add_argument('--repeat', type=int, default=2, help='train repeats for active training')
+    parser.add_argument('--seed', type=int, default=0, help='if True(>0) the initial 100 images will be the same everytime')
 
     args = parser.parse_args()
                                                                                                              
@@ -274,6 +274,7 @@ if __name__=="__main__":
     batch_size=args.batch_size
     epochs = args.epochs
     repeat=args.repeat
+    seed = args.seed
 
     # Get cpu or gpu device for training.
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -293,7 +294,8 @@ if __name__=="__main__":
                     device=device,
                     batch_size=batch_size,
                     epochs=epochs,
-                    repeat=repeat)
+                    repeat=repeat,
+                    seed=bool(seed))
 
     t = time.time() - start
     log('Time: {:.2f} seconds'.format(t))
