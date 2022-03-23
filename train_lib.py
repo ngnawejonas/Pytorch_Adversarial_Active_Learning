@@ -200,7 +200,7 @@ def train_model(train_data, validation_data, model, epochs=5,
     #     optimizer = get_optimzer(model)
     scheduler = optz[1]
     optimizer = optz[0]
-    early_topping = EarlyStopping(patience=epochs)
+    early_topping = EarlyStopping(patience=epochs//5 if epochs//5 > 10 else epochs)
 
     for t in range(epochs):
         verbose =  t%10 == 0

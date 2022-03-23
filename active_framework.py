@@ -250,7 +250,7 @@ if __name__=="__main__":
     parser.add_argument('--batch_size', type=int, default=256, help='batch size')
     parser.add_argument('--epochs', type=int, default=100, help='train epochs')
     parser.add_argument('--repeat', type=int, default=2, help='train repeats for active training')
-    parser.add_argument('--seed', type=int, default=0, help='if True(>0) the initial 100 images will be the same everytime')
+    parser.add_argument('--seed', type=int, default=1, help='if True(>0) the initial 100 images will be the same everytime')
 
     args = parser.parse_args()
                                                                                                              
