@@ -11,7 +11,7 @@ from cleverhans.torch.attacks.projected_gradient_descent import projected_gradie
 
 
 EARLY_STOPPING = True
-SHOW_LOG = True
+SHOW_LOG = False
 
 def log(msg, *args):
     if SHOW_LOG:
@@ -143,10 +143,10 @@ def robust_test(dataloader, model, loss_fn=None, attack=None, device=None, verbo
     for X, y in dataloader:
         X, y = X.to(device), y.to(device)
         # SHOW_LOG = True
-        log("attack...", num_batches)
+        # log("attack...", num_batches)
         t = time.time()
         X = attack_fn(model, X, attack)
-        log('{:.2f} secs'.format(time.time()-t))
+        # log('{:.2f} secs'.format(time.time()-t))
         pred = model(X)
         correct += (pred.argmax(1) == y).type(torch.float).sum().item()
     correct /= size
