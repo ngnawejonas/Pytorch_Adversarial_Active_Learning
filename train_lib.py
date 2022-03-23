@@ -11,11 +11,11 @@ from cleverhans.torch.attacks.projected_gradient_descent import projected_gradie
 
 
 EARLY_STOPPING = True
-SHOW_LOG = False
+SHOW_LOG = True
 
-def log(msg, **args):
+def log(msg, *args):
     if SHOW_LOG:
-        print(msg, **args)
+        print(msg, *args)
 
 # Edit from https://github.com/Bjarten/early-stopping-pytorch/blob/master/pytorchtools.py
 class EarlyStopping:
@@ -49,12 +49,13 @@ class EarlyStopping:
             self.counter = 0
 
 
-def train(dataloader, model, loss_fn, optimizer, device, verbose=True):
+def train(dataloader, model, loss_fn, optimizer, device, attack=None, verbose=True):
     size = len(dataloader.dataset)
     model.train()
     for batch, (X, y) in enumerate(dataloader):
         X, y = X.to(device), y.to(device)
-
+        if attack:
+            X = attack_fn(model, X, attack, test=False)
         # Compute prediction error
         pred = model(X)
         loss = loss_fn(pred, y)
@@ -68,25 +69,25 @@ def train(dataloader, model, loss_fn, optimizer, device, verbose=True):
             loss, current = loss.item(), batch * len(X)
             log(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
-def adv_train(dataloader, model, loss_fn, optimizer, device, attack, verbose=True):
-    log('Adversarial training')
-    size = len(dataloader.dataset)
-    model.train()
-    for batch, (X, y) in enumerate(dataloader):
-        X, y = X.to(device), y.to(device)
-        X = attack_fn(model, X, attack, test=False)
-        # Compute prediction error
-        pred = model(X)
-        loss = loss_fn(pred, y)
+# def adv_train(dataloader, model, loss_fn, optimizer, device, attack, verbose=True):
+#     log('Adversarial training')
+#     size = len(dataloader.dataset)
+#     model.train()
+#     for batch, (X, y) in enumerate(dataloader):
+#         X, y = X.to(device), y.to(device)
+#         X = attack_fn(model, X, attack, test=False)
+#         # Compute prediction error
+#         pred = model(X)
+#         loss = loss_fn(pred, y)
 
-        # Backpropagation
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+#         # Backpropagation
+#         optimizer.zero_grad()
+#         loss.backward()
+#         optimizer.step()
 
-        if batch % 100 == 0 and verbose:
-            loss, current = loss.item(), batch * len(X)
-            log(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+#         if batch % 100 == 0 and verbose:
+#             loss, current = loss.item(), batch * len(X)
+#             log(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
 
 def simple_test(dataloader, model, loss_fn=None, device=None, verbose=True):
@@ -108,27 +109,53 @@ def simple_test(dataloader, model, loss_fn=None, device=None, verbose=True):
         log(f"Test Accuracy: {(acc):>0.1f}% \n")
     return acc
 
+# def robust_test(dataloader, model, loss_fn=None, attack=None, device=None, verbose=True):
+#     if loss_fn is None:
+#         loss_fn = nn.CrossEntropyLoss()
+#     size = len(dataloader.dataset)
+#     num_batches = len(dataloader)
+#     correct = 0
+#     for X, y in dataloader:
+#         X, y = X.to(device), y.to(device)
+#         # SHOW_LOG = True
+#         log("attack...", num_batches)
+#         t = time.time()
+#         X = attack_fn(model, X, attack)
+#         log('{:.2f} secs'.format(time.time()-t))
+#         model.eval()
+#         with torch.no_grad(): 
+#             pred = model(X)
+#             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+#     correct /= size
+#     acc = 100*correct
+#     if verbose:
+#         log(f"Robust test Accuracy: {(acc):>0.1f}% \n")
+#     # SHOW_LOG = False
+#     return acc
+
 def robust_test(dataloader, model, loss_fn=None, attack=None, device=None, verbose=True):
     if loss_fn is None:
         loss_fn = nn.CrossEntropyLoss()
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     correct = 0
+    model.eval()
     for X, y in dataloader:
         X, y = X.to(device), y.to(device)
-        # log("attack...", num_batches)
-        # t = time.time()
+        # SHOW_LOG = True
+        log("attack...", num_batches)
+        t = time.time()
         X = attack_fn(model, X, attack)
-        # log('{:.2f} secs'.format(time.time()-t))
-        model.eval()
-        with torch.no_grad(): 
-            pred = model(X)
-            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+        log('{:.2f} secs'.format(time.time()-t))
+        pred = model(X)
+        correct += (pred.argmax(1) == y).type(torch.float).sum().item()
     correct /= size
     acc = 100*correct
     if verbose:
         log(f"Robust test Accuracy: {(acc):>0.1f}% \n")
+    # SHOW_LOG = False
     return acc
+
 
 def test(dataloader, model, loss_fn=None, device=None, verbose=True):
     if loss_fn is None:
@@ -180,10 +207,7 @@ def train_model(train_data, validation_data, model, epochs=5,
         if verbose:
             log(f"Epoch {t+1}\n-------------------------------")
 
-        if attack:
-            adv_train(train_dataloader, model, loss_fn, optimizer, device, attack=attack, verbose=verbose)
-        else:
-            train(train_dataloader, model, loss_fn, optimizer, device, verbose=verbose)
+        train(train_dataloader, model, loss_fn, optimizer, device, attack=attack, verbose=verbose)
 
         validation_loss, acc = test(validation_dataloader, model, loss_fn, device, verbose=verbose)
         if scheduler is not None:

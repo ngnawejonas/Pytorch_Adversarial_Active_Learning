@@ -20,9 +20,9 @@ from typing import Tuple, Any
 
 SHOW_LOG = False
 
-def log(msg, **args):
+def log(msg, *args):
     if SHOW_LOG:
-        print(msg, **args)
+        print(msg, *args)
 
 class MyDataSet(datasets.VisionDataset):
     def __init__(self, data, targets, root='data') -> None:

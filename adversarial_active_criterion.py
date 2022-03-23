@@ -23,9 +23,9 @@ from cleverhans.torch.attacks.projected_gradient_descent import projected_gradie
 
 SHOW_LOG = False
 
-def log(msg, **args):
+def log(msg, *args):
     if SHOW_LOG:
-        print(msg, **args)
+        print(msg, *args)
 
 class Adversarial_example(object):
     

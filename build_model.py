@@ -11,9 +11,9 @@ import torchvision.models as models
 
 SHOW_LOG = False
 
-def log(msg, **args):
+def log(msg, *args):
     if SHOW_LOG:
-        print(msg, **args)
+        print(msg, *args)
 
      
 def build_model_func(network_archi, img_size=(1,28,28, 10)):
