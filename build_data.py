@@ -55,7 +55,7 @@ class MyDataSet(datasets.VisionDataset):
         self.add_data(mydataset.data, mydataset.targets)
 
 
-def build_(num_sample, datafn=None, seed=False):
+def build_(num_sample=-1, datafn=None, seed=False):
     
     training_data = datafn(root="data",
                           train=True,
@@ -69,7 +69,7 @@ def build_(num_sample, datafn=None, seed=False):
                       download=True,
                       transform=ToTensor(),
                       )
- 
+
     N = training_data.data.shape[0]
     if seed:
         X_L, unlabelled_data = random_split(training_data, [num_sample, N - num_sample],
@@ -81,7 +81,7 @@ def build_(num_sample, datafn=None, seed=False):
     for X,y in dtl:
         labelled_data = MyDataSet(data=X, targets=y)
 
-    return labelled_data, unlabelled_data, test_data
+    return labelled_data, unlabelled_data, test_data, training_data
     
 
 def build_fashion_mnist(num_sample):
@@ -100,22 +100,22 @@ def build_data_func(dataset_name, num_sample, seed):
     
     labelled = None; unlabelled=None; test=None;
     if dataset_name=='mnist':
-        labelled, unlabelled, test = build_(num_sample, datasets.MNIST, seed=seed)
+        labelled, unlabelled, test, full_train = build_(num_sample, datasets.MNIST, seed=seed)
     
     elif dataset_name=='fashion_mnist':
-        labelled, unlabelled, test = build_(num_sample, datasets.FashionMNIST, seed=seed)
+        labelled, unlabelled, test, full_train = build_(num_sample, datasets.FashionMNIST, seed=seed)
 
     elif dataset_name=='svhn':
         # TO DO
-        labelled, unlabelled, test = build_svhn(num_sample, seed=seed)
+        labelled, unlabelled, test, full_train = build_svhn(num_sample, seed=seed)
     
     elif dataset_name=='cifar10':
         # TO DO
-        labelled, unlabelled, test = build_(num_sample, datasets.CIFAR10, seed=seed)
+        labelled, unlabelled, test, full_train = build_(num_sample, datasets.CIFAR10, seed=seed)
     else:
         raise NotImplementedError()
         
-    return labelled, unlabelled, test
+    return labelled, unlabelled, test, full_train
     
 def getSize(dataset_name):
     dataset_name = dataset_name.lower()

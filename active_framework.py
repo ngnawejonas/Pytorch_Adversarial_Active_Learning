@@ -13,7 +13,7 @@ import numpy as np
 import argparse
 
 import torch
-from torch.utils.data import DataLoader, random_split, Subset
+from torch.utils.data import DataLoader, random_split, Subset, RandomSampler
 from torch.distributions import Categorical
 
 from contextlib import closing
@@ -84,20 +84,24 @@ def loading(num_sample, network_name, data_name, seed=False):
     img_size = getSize(data_name) # TO DO
     model=build_model_func(network_name, img_size)
 
-    labelled_data, unlabelled_data, test_data = build_data_func(data_name, num_sample=num_sample, seed=seed)
+    labelled_data, unlabelled_data, test_data, full_train = build_data_func(data_name, 
+                                                                            num_sample=num_sample,
+                                                                            seed=seed)
     
-    return model, labelled_data, unlabelled_data, test_data
+    return model, labelled_data, unlabelled_data, test_data, full_train
 
 
-def active_selection(model, unlabelled_data, nb_data, active_method, attack, device):
+def active_selection(model, unlabelled_data, nb_data, active_method, attack, device, diversity=False):
     if active_method=='uncertainty':
         query, unlabelled_data = uncertainty_selection(model, unlabelled_data, nb_data)
     elif active_method in ['random', 'adv_train']:
         query, unlabelled_data = random_selection(model, unlabelled_data, nb_data, attack, device)
     elif active_method=='aaq':
-        query, unlabelled_data = adversarial_selection(model, unlabelled_data, nb_data, attack, False, device)
+        query, unlabelled_data = adversarial_selection(model, unlabelled_data, nb_data,
+                                                         attack, False, device, diversity)
     elif active_method=='saaq':
-        query, unlabelled_data = adversarial_selection(model, unlabelled_data, nb_data, attack, True, device)
+        query, unlabelled_data = adversarial_selection(model, unlabelled_data, nb_data, 
+                                                         attack, True, device, diversity)
     else:
         return NotImplementedError(f'Unknown active criterion {active_method}')
 
@@ -105,7 +109,7 @@ def active_selection(model, unlabelled_data, nb_data, active_method, attack, dev
     
 def random_selection(model, unlabelled_data, nb_data, attack, device):
     # select a random subset
-    subset_index = np.random.choice(unlabelled_data.indices, size=nb_data, replace=False)
+    subset_index = np.random.choice(unlabelled_data.indices, size=nb_data*2, replace=False)
     subset = Subset(unlabelled_data.dataset, subset_index)
 
     # compute distances to adv attacks on subset
@@ -154,7 +158,8 @@ def uncertainty_selection(model, unlabelled_data, nb_data):
     return new_data, unlabelled_data
 
                  
-def adversarial_selection(model, unlabelled_data, nb_data, attack='fgsm', add_adv=False, device=None):
+def adversarial_selection(model, unlabelled_data, nb_data, attack='fgsm',
+                         add_adv=False, device=None, diversity=False):
 
     # select a subset of size 10*nb_data
     u_size = len(unlabelled_data.indices)
@@ -165,7 +170,7 @@ def adversarial_selection(model, unlabelled_data, nb_data, attack='fgsm', add_ad
 
     # compute distances to adv attacks on subset
     active = Adversarial_DeepFool(model=model, device=device)
-    chosen_indices, attacked_images = active.generate(subset, attack, diversity=True)
+    chosen_indices, attacked_images = active.generate(subset, attack, diversity=diversity)
 
     # get selected images
     subset.indices  = chosen_indices[:nb_data]
@@ -192,7 +197,7 @@ def adversarial_selection(model, unlabelled_data, nb_data, attack='fgsm', add_ad
 #%%
 def active_learning(num_sample, data_name, network_name, active_name, attack='pgd',
                     id_exp=0, nb_query=100, n_pool = 2000, repo='test', filename='test.csv',
-                    device=None, batch_size=128, epochs=100, repeat=2, seed=False):
+                    device=None, batch_size=128, epochs=100, repeat=2, seed=True, diversity=False):
     
     # create a model and do a reinit function
     filename = filename+'_{}_{}_{}_{}_{}'.format(data_name, network_name, active_name, n_pool, attack)
@@ -202,7 +207,7 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='pg
     if active_name == 'adv_train':
         active_train_attack = attack
 
-    model, labelled_data, unlabelled_data, test_data = loading(num_sample, network_name, data_name, seed=seed)
+    model, labelled_data, unlabelled_data, test_data, full_train = loading(num_sample, network_name, data_name, seed=seed)
 
     percentage_data = num_sample #len(labelled_data)
     log('START')
@@ -217,7 +222,7 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='pg
         evaluate(model, test_data, percentage_data, id_exp, repo, filename, device, batch_size)
         t = time.time()
         log(f"Active selection: {active_name}")    
-        query, unlabelled_data = active_selection(model, unlabelled_data, nb_query, active_name, attack, device) # TO DO
+        query, unlabelled_data = active_selection(model, unlabelled_data, nb_query, active_name, attack, device, diversity=diversity) # TO DO
         # add query to the labelled set
         labelled_data.cat(query)
         #update percentage_data
@@ -232,6 +237,41 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='pg
     log("Evaluate and report test acc of model")
     evaluate(model, test_data, percentage_data, id_exp, repo, filename, device, batch_size)
     log("END")
+
+    log('training on random sample of same size')
+    # subset_index = np.random.choice(full_train.indices, size=percentage_data, replace=False)
+    # random_subset = Subset(full_train.dataset, subset_index)
+    random_subset = RandomSampler(training_data, replacement=False, 
+                                num_samples=percentage_data,
+                                generator=torch.Generator().manual_seed(42))
+    model = active_training(random_subset, network_name, img_size,
+                             batch_size=batch_size, epochs=epochs, 
+                             repeat=repeat, device=device, attack=None)
+    log("Evaluate and report test acc of random sample of same size")
+    evaluate(model, test_data, percentage_data, id_exp, repo, filename, device, batch_size)
+
+
+    log('adversarial training on random sample of same size')
+    model = active_training(random_subset, network_name, img_size,
+                             batch_size=batch_size, epochs=epochs, 
+                             repeat=repeat, device=device, attack=None)
+    log("Evaluate and report test acc of random sample of same size (adv train)")
+    evaluate(model, test_data, percentage_data, id_exp, repo, filename, device, batch_size)
+
+
+    log('training on full data')
+    model = active_training(full_train, network_name, img_size,
+                             batch_size=batch_size, epochs=epochs, 
+                             repeat=repeat, device=device, attack=None)
+    log("Evaluate and report test acc of full model")
+    evaluate(model, test_data, percentage_data, id_exp, repo, filename, device, batch_size)
+
+    log('adversarial training on full data')
+    model = active_training(full_train, network_name, img_size,
+                             batch_size=batch_size, epochs=epochs, 
+                             repeat=repeat, device=device, attack=attack)
+    log("Evaluate and report test acc of full model (adv train)")
+    evaluate(model, test_data, percentage_data, id_exp, repo, filename, device, batch_size)
         
 #%%
 if __name__=="__main__":
@@ -251,6 +291,7 @@ if __name__=="__main__":
     parser.add_argument('--epochs', type=int, default=100, help='train epochs')
     parser.add_argument('--repeat', type=int, default=2, help='train repeats for active training')
     parser.add_argument('--seed', type=int, default=1, help='if True(>0) the initial 100 images will be the same everytime')
+    parser.add_argument('--diversity', type=int, default=0, help='if True(>0) diversity selection applied')
 
     args = parser.parse_args()
                                                                                                              
@@ -275,6 +316,7 @@ if __name__=="__main__":
     epochs = args.epochs
     repeat=args.repeat
     seed = args.seed
+    diversity= args.diversity
 
     # Get cpu or gpu device for training.
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -295,7 +337,8 @@ if __name__=="__main__":
                     batch_size=batch_size,
                     epochs=epochs,
                     repeat=repeat,
-                    seed=bool(seed))
+                    seed=bool(seed),
+                    diversity=bool(diversity))
 
     t = time.time() - start
     log('Time: {:.2f} seconds'.format(t))
