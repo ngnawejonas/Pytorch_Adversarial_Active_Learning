@@ -239,11 +239,10 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='pg
     log("END")
 
     log('training on random sample of same size')
-    subset_index = np.random.choice(full_train.indices, size=percentage_data, replace=False)
-    random_subset = Subset(full_train.dataset, subset_index)
-    # random_subset = RandomSampler(full_train, replacement=False, 
-    #                             num_samples=percentage_data,
-    #                             generator=torch.Generator().manual_seed(42))
+    # subset_index = np.random.choice(full_train.indices, size=percentage_data, replace=False)
+    # random_subset = Subset(full_train.dataset, subset_index)
+    random_subset, _ = random_split(full_train, [percentage_data, len(full_train) - percentage_data],
+                                    generator=torch.Generator().manual_seed(42))
     model = active_training(random_subset, network_name, img_size,
                              batch_size=batch_size, epochs=epochs, 
                              repeat=repeat, device=device, attack=None)
