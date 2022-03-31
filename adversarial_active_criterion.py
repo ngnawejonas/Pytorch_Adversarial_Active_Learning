@@ -84,7 +84,7 @@ class Adversarial_DeepFool(Adversarial_example):
 
 
         
-    def generate(self, data, option='fgsm', diversity=None):
+    def generate(self, data, option='fgsm', diversity=False):
 
         method = ['fgsm', 'bim', 'pgd', 'mim']
         if option == 'random':
@@ -130,8 +130,8 @@ class Adversarial_DeepFool(Adversarial_example):
 
         #     chosen_indices = [data.indices[i] for i in new_index_perturbation]
         #     return chosen_indices, adv[new_index_perturbation]
-
         if diversity:
+            log('diversity selection')
             dist = []
             for i in range(len(data)):
                 for j in range(len(data)):

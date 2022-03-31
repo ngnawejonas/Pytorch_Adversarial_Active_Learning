@@ -211,6 +211,7 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='pg
 
     percentage_data = num_sample #len(labelled_data)
     log('START')
+    t = time.time()
     while( percentage_data < n_pool):
         log('percentage_data = ', percentage_data)
 
@@ -236,8 +237,10 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='pg
                              repeat=repeat, device=device, attack=active_train_attack)
     log("Evaluate and report test acc of model")
     evaluate(model, test_data, percentage_data, id_exp, repo, filename, device, batch_size)
-    log("END")
-
+    t = time.time() - t
+    log("END: {:.2f}".format(t))
+    
+    t =  time.time()
     log('Training on random sample of same size')
     # subset_index = np.random.choice(full_train.indices, size=percentage_data, replace=False)
     # random_subset = Subset(full_train.dataset, subset_index)
@@ -270,7 +273,8 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='pg
                              repeat=repeat, device=device, attack=attack)
     log("4/Evaluate and report test acc of full data model (adv train)")
     evaluate(model, test_data, N, id_exp, repo, filename, device, batch_size)
-        
+    t = time.time() - t
+    log("ADDITIONAL EVALS: {:.2f}".format(t))
 #%%
 if __name__=="__main__":
     
@@ -339,7 +343,7 @@ if __name__=="__main__":
                     diversity=bool(diversity))
 
     t = time.time() - start
-    log('Time: {:.2f} seconds'.format(t))
+    log('Total Time: {:.2f} seconds'.format(t))
     f = open("time.txt", 'a')
     f.write('Time: {:.2f} seconds'.format(t))
     f.close()
