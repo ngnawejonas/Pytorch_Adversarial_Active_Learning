@@ -238,15 +238,14 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='pg
     evaluate(model, test_data, percentage_data, id_exp, repo, filename, device, batch_size)
     log("END")
 
-    log('training on random sample of same size')
+    log('Training on random sample of same size')
     # subset_index = np.random.choice(full_train.indices, size=percentage_data, replace=False)
     # random_subset = Subset(full_train.dataset, subset_index)
-    random_subset, _ = random_split(full_train, [percentage_data, len(full_train) - percentage_data],
-                                    generator=torch.Generator().manual_seed(42))
+    random_subset, _ = random_split(full_train, [percentage_data, len(full_train) - percentage_data])
     model = active_training(random_subset, network_name, img_size,
                              batch_size=batch_size, epochs=epochs, 
                              repeat=repeat, device=device, attack=None)
-    log("Evaluate and report test acc of random sample of same size")
+    log("1/Evaluate and report test acc of random sample of same size")
     evaluate(model, test_data, percentage_data, id_exp, repo, filename, device, batch_size)
 
 
@@ -254,7 +253,7 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='pg
     model = active_training(random_subset, network_name, img_size,
                              batch_size=batch_size, epochs=epochs, 
                              repeat=repeat, device=device, attack=None)
-    log("Evaluate and report test acc of random sample of same size (adv train)")
+    log("2/Evaluate and report test acc of random sample of same size (adv train)")
     evaluate(model, test_data, percentage_data, id_exp, repo, filename, device, batch_size)
 
 
@@ -262,15 +261,15 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='pg
     model = active_training(full_train, network_name, img_size,
                              batch_size=batch_size, epochs=epochs, 
                              repeat=repeat, device=device, attack=None)
-    log("Evaluate and report test acc of full model")
-    evaluate(model, test_data, percentage_data, id_exp, repo, filename, device, batch_size)
+    log("3/Evaluate and report test acc of full data model")
+    evaluate(model, test_data, N, id_exp, repo, filename, device, batch_size)
 
     log('adversarial training on full data')
     model = active_training(full_train, network_name, img_size,
                              batch_size=batch_size, epochs=epochs, 
                              repeat=repeat, device=device, attack=attack)
-    log("Evaluate and report test acc of full model (adv train)")
-    evaluate(model, test_data, percentage_data, id_exp, repo, filename, device, batch_size)
+    log("4/Evaluate and report test acc of full data model (adv train)")
+    evaluate(model, test_data, N, id_exp, repo, filename, device, batch_size)
         
 #%%
 if __name__=="__main__":
