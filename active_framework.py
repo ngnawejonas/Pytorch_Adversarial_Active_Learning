@@ -265,14 +265,14 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='pg
                              batch_size=batch_size, epochs=epochs, 
                              repeat=repeat, device=device, attack=None)
     log("3/Evaluate and report test acc of full data model")
-    evaluate(model, test_data, N, id_exp, repo, filename, device, batch_size)
+    evaluate(model, test_data, len(full_train), id_exp, repo, filename, device, batch_size)
 
     log('adversarial training on full data')
     model = active_training(full_train, network_name, img_size,
                              batch_size=batch_size, epochs=epochs, 
                              repeat=repeat, device=device, attack=attack)
     log("4/Evaluate and report test acc of full data model (adv train)")
-    evaluate(model, test_data, N, id_exp, repo, filename, device, batch_size)
+    evaluate(model, test_data, len(full_train), id_exp, repo, filename, device, batch_size)
     t = time.time() - t
     log("ADDITIONAL EVALS: {:.2f}".format(t))
 #%%
