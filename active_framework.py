@@ -211,14 +211,14 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='pg
 
     percentage_data = num_sample #len(labelled_data)
     log('START')
-    t = time.time()
+    t0 = time.time()
     while( percentage_data < n_pool):
         log('percentage_data = ', percentage_data)
 
         model = active_training(labelled_data, network_name, img_size,
                              batch_size=batch_size, epochs=epochs, 
                              repeat=repeat, device=device, attack=active_train_attack)
-    
+
         log("Evaluate and report test acc of model")
         evaluate(model, test_data, percentage_data, id_exp, repo, filename, device, batch_size)
         t = time.time()
@@ -237,9 +237,9 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='pg
                              repeat=repeat, device=device, attack=active_train_attack)
     log("Evaluate and report test acc of model")
     evaluate(model, test_data, percentage_data, id_exp, repo, filename, device, batch_size)
-    t = time.time() - t
+    t = time.time() - t0
     log("END: {:.2f}".format(t))
-    
+
     t =  time.time()
     log('Training on random sample of same size')
     # subset_index = np.random.choice(full_train.indices, size=percentage_data, replace=False)
@@ -277,7 +277,7 @@ def active_learning(num_sample, data_name, network_name, active_name, attack='pg
     log("ADDITIONAL EVALS: {:.2f}".format(t))
 #%%
 if __name__=="__main__":
-    
+
     parser = argparse.ArgumentParser(description='Active Learning')
 
     parser.add_argument('--id_experiment', type=int, default=4, help='id number of experiment')
@@ -296,18 +296,13 @@ if __name__=="__main__":
     parser.add_argument('--diversity', type=int, default=0, help='if True(>0) diversity selection applied')
 
     args = parser.parse_args()
-                                                                                                             
-
-
-
-                                                                                                                
 
     id_exp = args.id_experiment
     repo=args.repo
     filename=args.filename
     if filename.split('.')[-1]=='csv':
         filename=filename.split('.csv')[0]
-        
+
     data_name = args.data_name
     network_name = args.network_name
     active_name = args.active
@@ -325,7 +320,7 @@ if __name__=="__main__":
     log(f"Using {device} device")
 
     start = time.time()
-    
+
     active_learning(num_sample=num_sample,
                     data_name=data_name,
                     network_name=network_name,
