@@ -89,11 +89,11 @@ class Adversarial_DeepFool(Adversarial_example):
         method = ['fgsm', 'bim', 'pgd', 'mim']
         if option == 'random':
             option = random.choice(method)    
-        ##### I save the option's name in a txt file
-        file = open('option.txt', 'a')
-        file.write(str(option))
-        file.write("\n")
-        file.close()
+            ##### I save the option's name in a txt file
+            file = open('option.txt', 'a')
+            file.write(str(option))
+            file.write("\n")
+            file.close()
         perturbations = []
         adv_attacks = []
         dataloader = DataLoader(data)
