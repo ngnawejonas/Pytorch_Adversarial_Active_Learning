@@ -11,7 +11,7 @@ import time
 import csv
 import argparse
 from contextlib import closing
-import yaml
+# import yaml
 
 import numpy as np
 
@@ -398,28 +398,28 @@ if __name__ == "__main__":
         SEED = args_.seed
         DIVERSITY = args_.diversity
         QUERY_SIZE = 100
-    else:
-        try:
-            with open('config.yaml', 'r') as config_file:
-                config = yaml.load(config_file, Loader=yaml.SafeLoader)
-                ID_EXP = config['id_experiment']
-                REPO = config['repo']
-                DATASET_NAME = config['dataset_name']
-                NETWORK_ARCH = config['network_arch']
-                ACTIVE_METHOD = config['active_method']
-                INITIAL_SAMPLE = config['initial_sample_size']
-                POOL_SIZE = config['final_pool_size']
-                ATTACK = config['attack']
-                BATCH_SIZE = config['batch_size']
-                EPOCHS = config['epochs']
-                REPEAT = config['repeat']
-                SEED = config['seed']
-                DIVERSITY = config['diversity']
-                QUERY_SIZE = config['query_size']
-            log('importing params from config file')
-            log(config)
-        except yaml.YAMLError as exc:
-            print("Error in configuration file:", exc)
+    # else:
+    #     try:
+    #         with open('config.yaml', 'r') as config_file:
+    #             config = yaml.load(config_file, Loader=yaml.SafeLoader)
+    #             ID_EXP = config['id_experiment']
+    #             REPO = config['repo']
+    #             DATASET_NAME = config['dataset_name']
+    #             NETWORK_ARCH = config['network_arch']
+    #             ACTIVE_METHOD = config['active_method']
+    #             INITIAL_SAMPLE = config['initial_sample_size']
+    #             POOL_SIZE = config['final_pool_size']
+    #             ATTACK = config['attack']
+    #             BATCH_SIZE = config['batch_size']
+    #             EPOCHS = config['epochs']
+    #             REPEAT = config['repeat']
+    #             SEED = config['seed']
+    #             DIVERSITY = config['diversity']
+    #             QUERY_SIZE = config['query_size']
+    #         log('importing params from config file')
+    #         log(config)
+    #     except yaml.YAMLError as exc:
+    #         print("Error in configuration file:", exc)
 
     IMG_SIZE = getSize(DATASET_NAME)
     FILENAME = 'acc_{}_{}_{}_{}_{}'.format(
