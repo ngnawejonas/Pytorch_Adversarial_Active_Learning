@@ -165,6 +165,7 @@ def uncertainty_selection(model, unlabelled_data, nb_data):
     dataloader = DataLoader(subset)
     model.eval()
     for image, _ in dataloader:
+        image = image.to(DEVICE)
         probabilities = torch.softmax(model(image), dim=1)
         entropy = Categorical(probs=probabilities).entropy()
         entropies.append(entropy.detach())
@@ -382,10 +383,10 @@ if __name__ == "__main__":
         help='if True(>0) diversity selection applied')
 
     args_ = parser.parse_args()
+
     if len(sys.argv)> 1:
         ID_EXP = args_.id_experiment
         REPO = args_.repo
-        
         DATASET_NAME = args_.dataset_name
         NETWORK_ARCH = args_.net_arch
         ACTIVE_METHOD = args_.active
