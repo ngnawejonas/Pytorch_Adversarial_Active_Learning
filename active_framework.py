@@ -11,7 +11,8 @@ import time
 import csv
 import argparse
 from contextlib import closing
-# import yaml
+import yaml
+import gc
 
 import numpy as np
 
@@ -67,9 +68,11 @@ def active_training(labelled_data, model=None, attack=None):
             best_loss = loss
             best_model = model
 
-    del model
-    del loss
-
+        # Clear GPU memory in preparation for next model training
+        del model
+        del loss
+        gc.collect()
+        torch.cuda.empty_cache()
     return best_model
 
 # %%
@@ -83,11 +86,12 @@ def evaluate(
     timer = time.time()
     test_dataloader = DataLoader(test_data, batch_size=BATCH_SIZE)
     acc = simple_test(test_dataloader, model.to(DEVICE), device=DEVICE)
-    acc_r = robust_test(
-        test_dataloader,
-        model.to(DEVICE),
-        attack=ATTACK,
-        device=DEVICE)
+    acc_r = 0
+    #robust_test(
+        # test_dataloader,
+        # model.to(DEVICE),
+        # attack=ATTACK,
+        # device=DEVICE)
     timer = time.time() - timer
     log("eval time: {:.2f}".format(timer))
     with closing(open(os.path.join(REPO, FILENAME), 'a')) as csvfile:
@@ -133,13 +137,13 @@ def random_selection(model, unlabelled_data, nb_data):
     # select a random subset
     subset_index = np.random.choice(
         unlabelled_data.indices,
-        size=nb_data * 2,
+        size=nb_data,
         replace=False)
     subset = Subset(unlabelled_data.dataset, subset_index)
 
     # compute distances to adv attacks on subset
-    deepfool = Adversarial_DeepFool(model=model, device=DEVICE)
-    _idx, _adv = deepfool.generate(subset, ATTACK, diversity=False)
+    # deepfool = Adversarial_DeepFool(model=model, device=DEVICE)
+    # _idx, _adv = deepfool.generate(subset, ATTACK, diversity=False)
 
     # remove selected indexes from unlabelled_data
     for idx in subset.indices:
@@ -399,28 +403,28 @@ if __name__ == "__main__":
         SEED = args_.seed
         DIVERSITY = args_.diversity
         QUERY_SIZE = 100
-    # else:
-    #     try:
-    #         with open('config.yaml', 'r') as config_file:
-    #             config = yaml.load(config_file, Loader=yaml.SafeLoader)
-    #             ID_EXP = config['id_experiment']
-    #             REPO = config['repo']
-    #             DATASET_NAME = config['dataset_name']
-    #             NETWORK_ARCH = config['network_arch']
-    #             ACTIVE_METHOD = config['active_method']
-    #             INITIAL_SAMPLE = config['initial_sample_size']
-    #             POOL_SIZE = config['final_pool_size']
-    #             ATTACK = config['attack']
-    #             BATCH_SIZE = config['batch_size']
-    #             EPOCHS = config['epochs']
-    #             REPEAT = config['repeat']
-    #             SEED = config['seed']
-    #             DIVERSITY = config['diversity']
-    #             QUERY_SIZE = config['query_size']
-    #         log('importing params from config file')
-    #         log(config)
-    #     except yaml.YAMLError as exc:
-    #         print("Error in configuration file:", exc)
+    else:
+        try:
+            with open('../config.yaml', 'r') as config_file:
+                config = yaml.load(config_file, Loader=yaml.SafeLoader)
+                ID_EXP = config['id_experiment']
+                REPO = config['repo']
+                DATASET_NAME = config['dataset_name']
+                NETWORK_ARCH = config['network_arch']
+                ACTIVE_METHOD = config['active_method']
+                INITIAL_SAMPLE = config['initial_sample_size']
+                POOL_SIZE = config['final_pool_size']
+                ATTACK = config['attack']
+                BATCH_SIZE = config['batch_size']
+                EPOCHS = config['epochs']
+                REPEAT = config['repeat']
+                SEED = config['seed']
+                DIVERSITY = config['diversity']
+                QUERY_SIZE = config['query_size']
+            log('importing params from config file')
+            log(config)
+        except yaml.YAMLError as exc:
+            print("Error in configuration file:", exc)
 
     IMG_SIZE = getSize(DATASET_NAME)
     FILENAME = 'acc_{}_{}_{}_{}_{}'.format(

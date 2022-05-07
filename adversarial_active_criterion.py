@@ -109,32 +109,12 @@ class Adversarial_DeepFool(Adversarial_example):
         adv = torch.stack(adv_attacks)
         sortedAdv = adv[index_perturbation]
 
-        # if diversity:
-        #     max_dist = [0]*len(data)
-        #     dist = []
-        #     for i in range(len(data)):
-        #         for j in range(i+1, len(data)):
-        #             adv_dist = torch.norm(sortedAdv[i]-sortedAdv[j]).cpu().numpy()
-        #             if adv_dist > max_dist[i]:
-        #                 max_dist[i] = adv_dist
-        #             if adv_dist > max_dist[j]:
-        #                 max_dist[j] = adv_dist
-        #             dist.append(adv_dist)
 
-        #     median_dist = np.median(dist)
-        #     new_index_perturbation = []
-
-        #     for i in range(len(data)):
-        #         if max_dist[i] > median_dist:
-        #             new_index_perturbation.append(index_perturbation[i])
-
-        #     chosen_indices = [data.indices[i] for i in new_index_perturbation]
-        #     return chosen_indices, adv[new_index_perturbation]
         if diversity:
             log('diversity selection')
             dist = []
             for i in range(len(data)):
-                for j in range(len(data)):
+                for j in range(i, len(data)):
                     adv_dist = torch.norm(sortedAdv[i]-sortedAdv[j])
                     dist.append(adv_dist.cpu().numpy())
 

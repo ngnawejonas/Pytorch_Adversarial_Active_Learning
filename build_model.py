@@ -32,6 +32,6 @@ def build_model_func(network_archi, img_size=(1,28,28, 10)):
         model = None
     else:
         raise NotImplementedError('Model {} not handled.'.format(network_archi))
-
+        
     return model
 
