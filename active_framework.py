@@ -405,7 +405,7 @@ if __name__ == "__main__":
         QUERY_SIZE = 100
     else:
         try:
-            with open('../config.yaml', 'r') as config_file:
+            with open('config.yaml', 'r') as config_file:
                 config = yaml.load(config_file, Loader=yaml.SafeLoader)
                 ID_EXP = config['id_experiment']
                 REPO = config['repo']
