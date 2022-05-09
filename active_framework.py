@@ -25,6 +25,7 @@ from build_data import build_data_func, getSize, MyDataSet
 from train_lib import train_model, simple_test, get_optimzer, robust_test
 from adversarial_active_criterion import Adversarial_DeepFool
 
+from tqdm import tqdm
 #pylint: disable=invalid-name
 #pylint: disable=too-many-arguments
 
@@ -99,7 +100,7 @@ def evaluate(
         writer = csv.writer(csvfile, delimiter=';',
                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
         writer.writerow([str(ID_EXP), str(percentage), str(acc), str(acc_r)])
-
+    return acc
 
 def load():
     """Loading dataset and model."""
@@ -269,7 +270,8 @@ def active_learning():
 
         # Phase 4:
         log("Phase 4: Evaluate and report test acc of model")
-        evaluate(model, test_data, percentage_data)
+        acc = evaluate(model, test_data, percentage_data)
+        log("Test acc : {:.2f}".format(acc))
 
     log('percentage_data = ', percentage_data)
     model = active_training(
