@@ -249,12 +249,15 @@ def active_learning():
         log('percentage_data = ', percentage_data)
 
         # Phase 2: Active Training
+        timer = time.time()
         log('Phase 2: Active Training')
         model = active_training(
             labelled_data,
             model,
             attack=active_train_attack)
-
+        timer = time.time() - timer
+        log("{}: training time {:.2f} seconds.".format(
+            percentage_data, timer))
         # phase 3: 
         timer = time.time()
         log(f"Phase 3: Active selection: {ACTIVE_METHOD}")
