@@ -3,11 +3,11 @@ repo: .
 dataset_name: mnist
 network_arch: resnet18
 active_method: random 
-initial_sample_size: 40000
+initial_sample_size: 100
 query_size: 100
 final_pool_size: 600  
 attack: pgd 
-batch_size: 128
+batch_size: 64
 epochs: 50
 repeat: 1
 seed: 60434

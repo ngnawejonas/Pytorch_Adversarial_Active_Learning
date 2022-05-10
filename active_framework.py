@@ -265,8 +265,6 @@ def active_learning():
             model, unlabelled_data, QUERY_SIZE, ACTIVE_METHOD)
         # add query to the labelled set
         labelled_data.cat(query)
-        # update percentage_data
-        percentage_data = len(labelled_data)
         timer = time.time() - timer
         log("{}: active selection time {:.2f} seconds.".format(
             percentage_data, timer))
@@ -276,17 +274,21 @@ def active_learning():
         acc = evaluate(model, test_data, percentage_data)
         log("Test acc : {:.2f}".format(acc))
 
-    log('percentage_data = ', percentage_data)
-    model = active_training(
-        labelled_data,
-        model=None,
-        attack=active_train_attack)
-    log("Phase 4: Evaluate and report test acc of model")
-    evaluate(
-        model,
-        test_data,
-        percentage_data)
-    timer = time.time() - timer0
+        ## update percentage_data
+        percentage_data = len(labelled_data)
+
+    if percentage_data > POOL_SIZE:
+        log('percentage_data = ', percentage_data)
+        model = active_training(
+            labelled_data,
+            model=None,
+            attack=active_train_attack)
+        log("Phase 4: Evaluate and report test acc of model")
+        evaluate(
+            model,
+            test_data,
+            percentage_data)
+        timer = time.time() - timer0
     log("END: {:.2f}".format(timer))
 
     # timer = time.time()
