@@ -1,5 +1,5 @@
 import time
-
+from tqdm import tqdm as tqdm
 import numpy as np
 
 import torch
@@ -200,9 +200,9 @@ def train_model(train_data, validation_data, model, epochs=5,
     #     optimizer = get_optimzer(model)
     scheduler = optz[1]
     optimizer = optz[0]
-    early_topping = EarlyStopping(patience=epochs//5 if epochs//5 > 10 else epochs)
+    early_topping = EarlyStopping(patience=epochs//5 if epochs//5 > 15 else epochs)
 
-    for t in range(epochs):
+    for t in tqdm(range(epochs), ncols=100):
         verbose =  t%10 == 0
         if verbose:
             log(f"Epoch {t+1}\n-------------------------------")
