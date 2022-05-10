@@ -284,11 +284,9 @@ def active_learning():
             model=None,
             attack=active_train_attack)
         log("Phase 4: Evaluate and report test acc of model")
-        evaluate(
-            model,
-            test_data,
-            percentage_data)
-        timer = time.time() - timer0
+        evaluate(model,test_data,percentage_data)
+        log("Test acc : {:.2f}".format(acc))
+    timer = time.time() - timer0
     log("END: {:.2f}".format(timer))
 
     # timer = time.time()
