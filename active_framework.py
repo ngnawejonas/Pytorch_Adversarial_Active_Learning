@@ -41,7 +41,7 @@ def log(msg, *args):
 # %%
 
 
-def active_training(labelled_data, model=None, attack=None):
+def active_training(labelled_data, attack=None):
     """active training."""
     # split into train and validation
 
@@ -54,8 +54,8 @@ def active_training(labelled_data, model=None, attack=None):
         # shuffle DATASET_NAME and split train and val
         train_data, val_data = random_split(
             labelled_data, [n_train, len(labelled_data) - n_train])
-        if model is None:
-            model = build_model_func(NETWORK_ARCH, IMG_SIZE)
+        # if model is None:
+        model = build_model_func(NETWORK_ARCH, IMG_SIZE)
 
         model = model.to(DEVICE)
         optz = get_optimzer(model, NETWORK_ARCH, DATASET_NAME)
@@ -70,7 +70,7 @@ def active_training(labelled_data, model=None, attack=None):
             best_model = model
 
         # Clear GPU memory in preparation for next model training
-        del model
+        # del model
         del loss
         gc.collect()
         torch.cuda.empty_cache()
@@ -128,7 +128,7 @@ def active_selection(model, unlabelled_data, nb_data, strategy):
         query, unlabelled_data = adversarial_selection(
             model, unlabelled_data, nb_data, True)
     else:
-        return NotImplementedError(f'Unknown active criterion {strategy}')
+        raise NotImplementedError(f'Unknown active criterion {strategy}')
 
     return query, unlabelled_data
 
@@ -251,10 +251,7 @@ def active_learning():
         # Phase 2: Active Training
         timer = time.time()
         log('Phase 2: Active Training')
-        model = active_training(
-            labelled_data,
-            model,
-            attack=active_train_attack)
+        model = active_training(labelled_data, attack=active_train_attack)
         timer = time.time() - timer
         log("{}: training time {:.2f} seconds.".format(
             percentage_data, timer))
@@ -279,10 +276,7 @@ def active_learning():
 
     if percentage_data > POOL_SIZE:
         log('percentage_data = ', percentage_data)
-        model = active_training(
-            labelled_data,
-            model=None,
-            attack=active_train_attack)
+        model = active_training(labelled_data, attack=active_train_attack)
         log("Phase 4: Evaluate and report test acc of model")
         evaluate(model,test_data,percentage_data)
         log("Test acc : {:.2f}".format(acc))
