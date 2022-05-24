@@ -274,7 +274,7 @@ def active_learning():
         acc = evaluate(model, test_data, percentage_data)
         log("Test acc : {:.2f}".format(acc))
 
-        ## update percentage_data
+        ## update percentage_data 
         percentage_data = len(labelled_data)
 
     if percentage_data > POOL_SIZE:
