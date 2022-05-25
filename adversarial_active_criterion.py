@@ -104,7 +104,7 @@ class Adversarial_DeepFool(Adversarial_example):
             r_i, adv_image = self.generate_sample(image, option=option, index=i)
             perturbations.append(r_i.detach())
             adv_attacks.append(adv_image.detach()[0])
-            print('adv added', adv_attacks[-1].shape, adv_attacks[-1].min(), adv_attacks[-1].max())
+            print('adv added', adv_attacks[-1].shape, adv_attacks[-1].cpu().numpy().min(), adv_attacks[-1].cpu().numpy().max())
  
         perturbations = torch.Tensor(perturbations)
         index_perturbation = perturbations.argsort()
