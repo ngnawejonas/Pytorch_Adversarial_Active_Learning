@@ -106,7 +106,7 @@ class Adversarial_DeepFool(Adversarial_example):
             adv_attacks.append(adv_image[0])
             k = 0 if len(adv_attacks)==1 else -2
             disprev =  torch.norm(adv_attacks[-1] - adv_attacks[k])
-            print('adv added', ri, disprev.cpu().numpy(), adv_attacks[-1].shape, adv_attacks[-1].min().cpu().numpy(), adv_attacks[-1].max().cpu().numpy())
+            print('adv added', r_i, disprev.cpu().numpy(), adv_attacks[-1].shape, adv_attacks[-1].min().cpu().numpy(), adv_attacks[-1].max().cpu().numpy())
  
         perturbations = torch.Tensor(perturbations)
         index_perturbation = perturbations.argsort()
