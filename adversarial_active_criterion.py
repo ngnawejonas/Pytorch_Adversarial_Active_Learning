@@ -56,7 +56,7 @@ class Adversarial_example(object):
         file.write(",     ")
         x_i = true_image.detach().clone()
         i=0
-        while self.predict(x_i) == true_label and i<10:
+        while self.predict(x_i) == true_label and i<0:
             x_i = attack_fn(model_fn=self.model, x=x_i, y = true_label, **args)
             i+=1
 
@@ -67,6 +67,7 @@ class Adversarial_example(object):
         file.close()
         ### perturbation
         distance = torch.norm(x_i - true_image)
+        assert distance == 0
         ##### I save the distance in a txt file
         file = open('distance.txt', 'a')
         file.write(str(index))
