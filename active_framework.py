@@ -339,6 +339,11 @@ if __name__ == "__main__":
         default=100,
         help='size of the initial training set')
     parser.add_argument(
+        '--query_size',
+        type=int,
+        default=100,
+        help='query size')
+    parser.add_argument(
         '--n_pool',
         type=int,
         default=200,
@@ -401,7 +406,7 @@ if __name__ == "__main__":
         REPEAT = args_.repeat
         SEED = args_.seed
         DIVERSITY = args_.diversity
-        QUERY_SIZE = 100
+        QUERY_SIZE = args_.query_size
     else:
         try:
             with open('config.yaml', 'r') as config_file:
