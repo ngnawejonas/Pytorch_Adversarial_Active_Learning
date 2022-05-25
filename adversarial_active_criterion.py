@@ -75,7 +75,7 @@ class Adversarial_example(object):
         file.write(str(distance.detach().cpu().numpy()))
         file.write("\n")
         file.close()
-        return distance, x_i
+        return distance.detach(), x_i.detach()
 
 
 class Adversarial_DeepFool(Adversarial_example):
@@ -102,9 +102,10 @@ class Adversarial_DeepFool(Adversarial_example):
             # if i%10==0:
             #     log(i)
             r_i, adv_image = self.generate_sample(image, option=option, index=i)
-            perturbations.append(r_i.detach())
-            adv_attacks.append(adv_image.detach()[0])
-            print('adv added', adv_attacks[-1].shape, adv_attacks[-1].cpu().numpy().min(), adv_attacks[-1].cpu().numpy().max())
+            perturbations.append(r_i)
+            adv_attacks.append(adv_image[0])
+            disprev =  torch.norm(adv_attacks[-1] - adv_attacks[-2])
+            print('adv added', disprev, torch.n adv_attacks[-1].shape, adv_attacks[-1].min(), adv_attacks[-1].max())
  
         perturbations = torch.Tensor(perturbations)
         index_perturbation = perturbations.argsort()
