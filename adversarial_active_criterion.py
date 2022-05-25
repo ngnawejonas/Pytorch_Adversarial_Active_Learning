@@ -56,7 +56,7 @@ class Adversarial_example(object):
         file.write(",     ")
         x_i = true_image.detach().clone()
         i=0
-        while self.predict(x_i) == true_label and i<10:
+        while self.predict(x_i) == true_label and i<0:
             x_i = attack_fn(model_fn=self.model, x=x_i, y = true_label, **args)
             i+=1
 
@@ -106,7 +106,7 @@ class Adversarial_DeepFool(Adversarial_example):
             adv_attacks.append(adv_image[0])
             k = 0 if len(adv_attacks)==1 else -2
             disprev =  torch.norm(adv_attacks[-1] - adv_attacks[k])
-            print('adv added', disprev.cpu().numpy(), adv_attacks[-1].shape, adv_attacks[-1].min().cpu().numpy(), adv_attacks[-1].max().cpu().numpy())
+            print('adv added', ri, disprev.cpu().numpy(), adv_attacks[-1].shape, adv_attacks[-1].min().cpu().numpy(), adv_attacks[-1].max().cpu().numpy())
  
         perturbations = torch.Tensor(perturbations)
         index_perturbation = perturbations.argsort()
